@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
-import { Stock } from '@stock-portfolio/shared'
+import { Stock } from '../types/shared'
 import { useStealthMode } from '@/contexts/StealthContext'
 
 interface StockCardProps {

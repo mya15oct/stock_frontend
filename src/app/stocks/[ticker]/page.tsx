@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Stock } from '@stock-portfolio/shared'
+import { Stock } from '../../../types/shared'
 import { getStock } from '@/lib/api'
 import Breadcrumb from '@/components/Breadcrumb'
 import StockHeader from '@/components/StockHeader'

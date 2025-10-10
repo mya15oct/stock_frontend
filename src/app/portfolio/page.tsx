@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import StockCard from '@/components/StockCard'
-import { PortfolioPosition } from '@stock-portfolio/shared'
+import { PortfolioPosition } from '../../types/shared'
 import { getPortfolio } from '@/lib/api'
 import { useStealthMode } from '@/contexts/StealthContext'
 

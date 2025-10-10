@@ -1,6 +1,6 @@
 'use client'
 
-import { Stock } from '@stock-portfolio/shared'
+import { Stock } from '../types/shared'
 import { useStealthMode } from '@/contexts/StealthContext'
 
 interface StockHeaderProps {

@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import StockCard from '@/components/StockCard'
 import Breadcrumb from '@/components/Breadcrumb'
-import { Stock } from '@stock-portfolio/shared'
+import { Stock } from '../../types/shared'
 import { getStocks } from '@/lib/api'
 
 export default function StocksPage() {

@@ -1,4 +1,4 @@
-import { Stock, PortfolioPosition, ApiResponse } from '@stock-portfolio/shared'
+import { Stock, PortfolioPosition, ApiResponse } from '../types/shared'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
 
