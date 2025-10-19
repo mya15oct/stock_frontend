@@ -1,17 +1,17 @@
-import Link from 'next/link'
+import Link from "next/link";
 
 interface BreadcrumbItem {
-  label: string
-  href?: string
-  active?: boolean
+  label: string;
+  href?: string;
+  active?: boolean;
 }
 
 interface BreadcrumbProps {
-  country?: string
-  sector?: string
-  companyName?: string
-  ticker?: string
-  customItems?: BreadcrumbItem[]
+  country?: string;
+  sector?: string;
+  companyName?: string;
+  ticker?: string;
+  customItems?: BreadcrumbItem[];
 }
 
 export default function Breadcrumb({
@@ -19,46 +19,46 @@ export default function Breadcrumb({
   sector,
   companyName,
   ticker,
-  customItems
+  customItems,
 }: BreadcrumbProps) {
   const generateBreadcrumbItems = (): BreadcrumbItem[] => {
     if (customItems) {
-      return customItems
+      return customItems;
     }
 
     const items: BreadcrumbItem[] = [
       {
         label: "Stocks",
-        href: "/"
-      }
-    ]
+        href: "/",
+      },
+    ];
 
     if (country) {
       items.push({
         label: country,
-        href: `/stocks?country=${encodeURIComponent(country.toLowerCase())}`
-      })
+        href: `/stocks?country=${encodeURIComponent(country.toLowerCase())}`,
+      });
     }
 
     if (sector) {
       items.push({
         label: sector,
-        href: `/stocks?sector=${encodeURIComponent(sector.toLowerCase())}`
-      })
+        href: `/stocks?sector=${encodeURIComponent(sector.toLowerCase())}`,
+      });
     }
 
     if (companyName) {
       items.push({
         label: companyName,
         href: ticker ? `/stocks/${ticker}` : undefined,
-        active: true
-      })
+        active: true,
+      });
     }
 
-    return items
-  }
+    return items;
+  };
 
-  const breadcrumbItems = generateBreadcrumbItems()
+  const breadcrumbItems = generateBreadcrumbItems();
 
   return (
     <nav className="flex" aria-label="Breadcrumb">
@@ -104,9 +104,7 @@ export default function Breadcrumb({
             ) : (
               <span
                 className={`inline-flex items-center text-sm font-medium ${
-                  item.active
-                    ? 'text-gray-500 cursor-default'
-                    : 'text-gray-700'
+                  item.active ? "text-gray-500 cursor-default" : "text-gray-700"
                 }`}
               >
                 {index === 0 && !item.href && (
@@ -127,7 +125,7 @@ export default function Breadcrumb({
         ))}
       </ol>
     </nav>
-  )
+  );
 }
 
-export { type BreadcrumbItem, type BreadcrumbProps }
+export { type BreadcrumbItem, type BreadcrumbProps };

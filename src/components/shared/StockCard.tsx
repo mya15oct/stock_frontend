@@ -1,16 +1,16 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { Card } from '@/components/ui/Card'
-import { Stock } from '../types/shared'
-import { useStealthMode } from '@/contexts/StealthContext'
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import type { Stock } from "@/types";
+import { useStealthMode } from "@/contexts/StealthContext";
 
 interface StockCardProps {
-  stock: Stock
+  stock: Stock;
 }
 
 export default function StockCard({ stock }: StockCardProps) {
-  const { formatPrice } = useStealthMode()
+  const { formatPrice } = useStealthMode();
 
   return (
     <Link href={`/stocks/${stock.ticker}`}>
@@ -27,5 +27,5 @@ export default function StockCard({ stock }: StockCardProps) {
         </div>
       </Card>
     </Link>
-  )
+  );
 }
