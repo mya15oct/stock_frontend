@@ -2,6 +2,7 @@
 
 import type { Stock } from "@/types";
 import { useStealthMode } from "@/contexts/StealthContext";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface StockHeaderProps {
   stock: Stock;
@@ -96,36 +97,70 @@ export default function StockHeader({
           </div>
 
           <div className="grid grid-cols-5 gap-8 text-sm">
-            <div>
-              <div className="text-gray-500 mb-1">Earnings date</div>
-              <div className="font-medium text-gray-900">
-                {mockData.earningsDate}
+            {/* Earnings Date */}
+            <Tooltip 
+              content="The next date on which the company will report its financial results"
+              position="bottom"
+            >
+              <div>
+                <div className="text-gray-500 mb-1">Earnings date</div>
+                <div className="font-medium text-gray-900">
+                  {mockData.earningsDate}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-gray-500 mb-1">P/E</div>
-              <div className="font-medium text-gray-900">
-                {isStealthMode ? "••••" : mockData.pe}
+            </Tooltip>
+
+            {/* P/E Ratio */}
+            <Tooltip 
+              content="The price-to-earnings ratio. A measure of how expensive a stock is relative to its earnings"
+              position="bottom"
+            >
+              <div>
+                <div className="text-gray-500 mb-1">P/E</div>
+                <div className="font-medium text-gray-900">
+                  {isStealthMode ? "••••" : mockData.pe}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-gray-500 mb-1">EPS</div>
-              <div className="font-medium text-gray-900">
-                {isStealthMode ? "••••" : mockData.eps}
+            </Tooltip>
+
+            {/* EPS */}
+            <Tooltip 
+              content="Earnings per share. The portion of a company's profit allocated to each outstanding share of common stock"
+              position="bottom"
+            >
+              <div>
+                <div className="text-gray-500 mb-1">EPS</div>
+                <div className="font-medium text-gray-900">
+                  {isStealthMode ? "••••" : mockData.eps}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-gray-500 mb-1">Market cap</div>
-              <div className="font-medium text-gray-900">
-                {isStealthMode ? "••••" : mockData.marketCap}
+            </Tooltip>
+
+            {/* Market Cap */}
+            <Tooltip 
+              content="The current total value of the company's shares which are in circulation at the moment"
+              position="bottom"
+            >
+              <div>
+                <div className="text-gray-500 mb-1">Market cap</div>
+                <div className="font-medium text-gray-900">
+                  {isStealthMode ? "••••" : mockData.marketCap}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-gray-500 mb-1">Dividend yield</div>
-              <div className="font-medium text-gray-900">
-                {isStealthMode ? "••••" : mockData.dividendYield}
+            </Tooltip>
+
+            {/* Dividend Yield */}
+            <Tooltip 
+              content="Dividend yield, FWD - the ratio of the amount of dividends for the next 12 months to the share price"
+              position="bottom"
+            >
+              <div>
+                <div className="text-gray-500 mb-1">Dividend yield</div>
+                <div className="font-medium text-gray-900">
+                  {isStealthMode ? "••••" : mockData.dividendYield}
+                </div>
               </div>
-            </div>
+            </Tooltip>
           </div>
         </div>
       </div>
