@@ -35,6 +35,8 @@ export interface AnimatedBarChartProps {
   isStealthMode?: boolean;
   animationDuration?: number;
   staggerDelay?: number;
+  yAxisLabel?: string; // Custom Y-axis label (e.g., "USD Billions")
+  yAxisDivisor?: number; // Divisor to scale down Y-axis values
 }
 
 const DEFAULT_COLORS = [
@@ -56,7 +58,29 @@ export default function AnimatedBarChart({
   isStealthMode = false,
   animationDuration = 1200,
   staggerDelay = 100,
+  yAxisLabel,
+  yAxisDivisor = 1,
 }: AnimatedBarChartProps) {
+  // Format Y-axis tick values
+  const formatYAxis = (value: number) => {
+    if (isStealthMode) return "••••";
+    const scaledValue = value / yAxisDivisor;
+    return scaledValue.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    });
+  };
+
+  // Format tooltip values
+  const formatTooltip = (value: number) => {
+    if (isStealthMode) return "••••";
+    const scaledValue = value / yAxisDivisor;
+    return scaledValue.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  };
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart
@@ -72,11 +96,20 @@ export default function AnimatedBarChart({
         <YAxis
           tick={{ fill: "#6b7280", fontSize: 12 }}
           axisLine={{ stroke: "#d1d5db" }}
+          tickFormatter={formatYAxis}
+          label={
+            yAxisLabel
+              ? {
+                  value: yAxisLabel,
+                  angle: -90,
+                  position: "insideLeft",
+                  style: { textAnchor: "middle", fill: "#374151", fontSize: 12, fontWeight: 500 },
+                }
+              : undefined
+          }
         />
         <Tooltip
-          formatter={(value: number) =>
-            isStealthMode ? "••••" : value.toLocaleString()
-          }
+          formatter={formatTooltip}
           contentStyle={{
             backgroundColor: "white",
             border: "1px solid #e5e7eb",

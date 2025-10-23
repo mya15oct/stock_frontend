@@ -8,8 +8,9 @@ import type {
   StatementType,
   Stock,
 } from "@/types";
-import PromotionalBanner from "@/components/PromotionalBanner";
+import PromotionalBanner from "@/components/ui/PromotionalBanner";
 import { AnimatedBarChart, CHART_COLORS } from "@/components/charts";
+import { formatFinancialNumber, getFinancialScale } from "@/utils/format";
 
 interface FinancialsTabProps {
   ticker: string;
@@ -109,13 +110,49 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
     });
   };
 
+  // Calculate the best scale for Y-axis based on selected metrics
+  const getChartScale = () => {
+    const chartData = getChartData();
+    const allValues: number[] = [];
+    
+    chartData.forEach((dataPoint) => {
+      selectedMetrics.forEach((metric) => {
+        const value = dataPoint[metric];
+        if (typeof value === 'number' && !isNaN(value)) {
+          allValues.push(Math.abs(value));
+        }
+      });
+    });
+
+    if (allValues.length === 0) {
+      return { divisor: 1, label: "USD" };
+    }
+
+    const scale = getFinancialScale(allValues);
+    return {
+      divisor: scale.divisor,
+      label: `USD ${scale.label}`,
+    };
+  };
+
+  // Format for table: Always show in Millions, no suffix
+  const formatValueForTable = (value: number | undefined) => {
+    if (isStealthMode) return "••••";
+    if (value === undefined) return "-";
+    
+    // Convert to millions and format with comma separator
+    const inMillions = value / 1e6;
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(inMillions);
+  };
+
+  // Format for chart: Keep the original function with M/B suffix
   const formatValue = (value: number | undefined) => {
     if (isStealthMode) return "••••";
     if (value === undefined) return "-";
-    return value.toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
+    return formatFinancialNumber(value);
   };
 
   const getCurrentData = (): FinancialDataResponse | null => {
@@ -208,7 +245,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                       key={period}
                       className="py-3 px-4 text-center text-gray-700"
                     >
-                      {formatValue(values[period])}
+                      {formatValueForTable(values[period])}
                     </td>
                   ))}
                 </tr>
@@ -323,29 +360,41 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
               {selectedMetrics.length > 1 ? "s" : ""} selected
             </p>
           </div>
-          <AnimatedBarChart
-            data={getChartData()}
-            metrics={selectedMetrics.filter(
-              (m) => getCurrentData()?.data[m] !== undefined
-            )}
-            colors={CHART_COLORS.primary}
-            height={400}
-            isStealthMode={isStealthMode}
-            animationDuration={1200}
-            staggerDelay={100}
-          />
+          {(() => {
+            const scale = getChartScale();
+            return (
+              <AnimatedBarChart
+                data={getChartData()}
+                metrics={selectedMetrics.filter(
+                  (m) => getCurrentData()?.data[m] !== undefined
+                )}
+                colors={CHART_COLORS.primary}
+                height={400}
+                isStealthMode={isStealthMode}
+                animationDuration={1200}
+                staggerDelay={100}
+                yAxisLabel={scale.label}
+                yAxisDivisor={scale.divisor}
+              />
+            );
+          })()}
         </Card>
       )}
 
       {/* Data Card */}
       <Card className="p-6">
-        <div className="mb-4">
-          <h3 className="text-xl font-semibold text-gray-900">
-            {getTabTitle()}
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            Company: {ticker} | Period: {periodType}
-          </p>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">
+              {getTabTitle()}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Company: {ticker} | Period: {periodType}
+            </p>
+          </div>
+          <div className="text-sm text-gray-500">
+            Currency: <span className="font-medium text-gray-700">Millions USD</span>
+          </div>
         </div>
 
         {loading && (
