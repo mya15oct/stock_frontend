@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/Card'
-import PromotionalBanner from '@/components/PromotionalBanner'
+import PromotionalBanner from '@/components/ui/PromotionalBanner'
 
 interface NewsTabProps {
   ticker: string
