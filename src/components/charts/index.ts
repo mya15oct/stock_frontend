@@ -13,6 +13,9 @@ export type {
   ComparisonDataPoint,
 } from "./ComparisonBarChart";
 
+export { default as PriceHistoryChart } from "./PriceHistoryChart";
+export type { PriceHistoryChartProps, PriceDataPoint } from "./PriceHistoryChart";
+
 // Default colors cho charts
 export const CHART_COLORS = {
   primary: [
