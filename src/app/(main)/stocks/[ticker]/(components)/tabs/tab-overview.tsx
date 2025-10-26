@@ -15,7 +15,6 @@ interface OverviewTabProps {
 export default function OverviewTab({ stock }: OverviewTabProps) {
   const { formatPrice, formatNumber, isStealthMode } = useStealthMode();
   const [selectedPeriod, setSelectedPeriod] = useState("1y");
-  const [openFAQ, setOpenFAQ] = useState<number | null>(null);
 
   // ==========================================
   // MOCK DATA - Thiết kế sẵn sàng để replace bằng real data từ API
@@ -105,80 +104,6 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
       dateRange: `${startDate} - ${endDate}`,
     };
   }, [priceHistoryData]);
-
-  const faqData = [
-    {
-      question: "What sector does Apple Inc (AAPL) operate in?",
-      answer:
-        "Apple Inc belongs to the Information Technology sector and operates in the Consumer Electronics industry.",
-    },
-    {
-      question: "What is Apple Inc (AAPL) current stock price?",
-      answer:
-        "As of the latest data, Apple Inc stock price is $245.27, with a previous close of $254.04. Apple Inc lost -$8.77 in the last trading session, representing a -3.45% loss.",
-    },
-    {
-      question: "What is Apple Inc (AAPL) current market capitalization?",
-      answer: "Apple Inc market cap is approximately 3.64 trillion.",
-    },
-    {
-      question: "What is Apple Inc (AAPL) Earnings Per Share (EPS)?",
-      answer: "The trailing EPS is $6.58, and the forward EPS is $7.94.",
-    },
-    {
-      question: "What is Apple Inc (AAPL) Price-to-Earnings (P/E) ratio?",
-      answer:
-        "Apple Inc current P/E ratio is 37.28, with a forward P/E of 30.87.",
-    },
-    {
-      question: "What is Apple Inc (AAPL) EBITDA?",
-      answer:
-        "Apple Inc EBITDA (Earnings Before Interest, Taxes, Depreciation, and Amortization) is 31.03 billion.",
-    },
-    {
-      question: "Does Apple Inc (AAPL) pay dividends?",
-      answer:
-        "Yes, Apple Inc pays quarterly dividends with an annualized yield of 0.42% and an estimated annual payout of $1.04 per share.",
-    },
-    {
-      question: "When is the next ex-dividend date for Apple Inc (AAPL)?",
-      answer: "The next ex-dividend date is scheduled for November 11, 2025.",
-    },
-    {
-      question:
-        "How did Apple Inc (AAPL) perform in its most recent earnings report?",
-      answer:
-        "In the last report (June 30, 2025), Apple Inc posted an EPS surprise of 11.35% and a revenue surprise of 5.47%.",
-    },
-    {
-      question: "When is Apple Inc (AAPL) next earnings report?",
-      answer:
-        "Apple Inc is expected to release its next earnings report on September 30, 2025.",
-    },
-    {
-      question: "What is Apple Inc (AAPL) beta (volatility) score?",
-      answer:
-        "Apple Inc has a beta of 1.165, meaning its volatility is roughly in line with the market.",
-    },
-  ];
-
-  const toggleFAQ = (index: number) => {
-    setOpenFAQ(openFAQ === index ? null : index);
-  };
-
-  const faqQuestions = [
-    "What sector does Apple Inc (AAPL) operate in?",
-    "What is Apple Inc (AAPL) current stock price?",
-    "What is Apple Inc (AAPL) current market capitalization?",
-    "What is Apple Inc (AAPL) price-to-earnings ratio?",
-    "What is Apple Inc (AAPL) price-to-book ratio?",
-    "What is Apple Inc (AAPL) current P/E ratio?",
-    "What is Apple Inc (AAPL) PEG ratio?",
-    "How does Apple Inc (AAPL) perform vs its most recent earnings report?",
-    "What does Apple Inc (AAPL) company do?",
-    "What is Apple Inc (AAPL) book value/equity ratio?",
-  ];
->>>>>>> 458872ab93299f0ba6be041292096b892bc377d9
 
   return (
     <div className="bg-white min-h-screen">
