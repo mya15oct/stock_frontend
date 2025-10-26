@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { useStealthMode } from "@/contexts/StealthContext";
 import type { Stock } from "@/types";
-import PromotionalBanner from "@/components/PromotionalBanner";
+import PromotionalBanner from "@/components/ui/PromotionalBanner";
 import CompanyInfo from "@/components/shared/CompanyInfo";
+import { PriceHistoryChart, type PriceDataPoint } from "@/components/charts";
 
 interface OverviewTabProps {
   stock: Stock;
@@ -14,6 +15,170 @@ interface OverviewTabProps {
 export default function OverviewTab({ stock }: OverviewTabProps) {
   const { formatPrice, formatNumber, isStealthMode } = useStealthMode();
   const [selectedPeriod, setSelectedPeriod] = useState("1y");
+  const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+
+  // ==========================================
+  // MOCK DATA - Thiết kế sẵn sàng để replace bằng real data từ API
+  // TODO: Fetch từ API: GET /api/stocks/{ticker}/price-history?period={selectedPeriod}
+  // ==========================================
+  const mockPriceHistoryData: Record<string, PriceDataPoint[]> = {
+    "7d": [
+      { date: "2025-10-18", price: 245.27 },
+      { date: "2025-10-19", price: 247.50 },
+      { date: "2025-10-20", price: 243.80 },
+      { date: "2025-10-21", price: 249.20 },
+      { date: "2025-10-22", price: 251.30 },
+      { date: "2025-10-23", price: 248.90 },
+      { date: "2025-10-24", price: 254.04 },
+    ],
+    "1m": Array.from({ length: 30 }, (_, i) => ({
+      date: new Date(2025, 9, i + 1).toISOString().split('T')[0],
+      price: 220 + Math.random() * 40,
+    })),
+    "3m": Array.from({ length: 90 }, (_, i) => ({
+      date: new Date(2025, 7, i + 1).toISOString().split('T')[0],
+      price: 200 + Math.random() * 60,
+    })),
+    "6m": Array.from({ length: 180 }, (_, i) => ({
+      date: new Date(2025, 4, i + 1).toISOString().split('T')[0],
+      price: 190 + Math.random() * 70,
+    })),
+    "YTD": Array.from({ length: 300 }, (_, i) => ({
+      date: new Date(2025, 0, i + 1).toISOString().split('T')[0],
+      price: 180 + Math.random() * 80,
+    })),
+    "1y": [
+      { date: "Nov '24", price: 180.00 },
+      { date: "Dec '24", price: 195.50 },
+      { date: "Jan '25", price: 188.30 },
+      { date: "Feb '25", price: 172.40 },
+      { date: "Mar '25", price: 158.20 },
+      { date: "Apr '25", price: 189.50 },
+      { date: "May '25", price: 215.80 },
+      { date: "Jun '25", price: 238.40 },
+      { date: "Jul '25", price: 245.60 },
+      { date: "Aug '25", price: 232.30 },
+      { date: "Sep '25", price: 218.90 },
+      { date: "Oct '25", price: 245.27 },
+    ],
+    "5y": Array.from({ length: 60 }, (_, i) => ({
+      date: new Date(2020, i, 1).toISOString().split('T')[0],
+      price: 100 + Math.random() * 160,
+    })),
+    "all": Array.from({ length: 120 }, (_, i) => ({
+      date: new Date(2015, i, 1).toISOString().split('T')[0],
+      price: 50 + Math.random() * 210,
+    })),
+  };
+
+  // Get price history data dựa trên selected period
+  const priceHistoryData = useMemo(
+    () => mockPriceHistoryData[selectedPeriod] || mockPriceHistoryData["1y"],
+    [selectedPeriod]
+  );
+
+  // Tính toán performance metrics
+  const performanceMetrics = useMemo(() => {
+    if (priceHistoryData.length < 2) {
+      return {
+        startPrice: 0,
+        endPrice: 0,
+        change: 0,
+        changePercent: 0,
+        dateRange: "",
+      };
+    }
+
+    const startPrice = priceHistoryData[0].price;
+    const endPrice = priceHistoryData[priceHistoryData.length - 1].price;
+    const change = endPrice - startPrice;
+    const changePercent = (change / startPrice) * 100;
+
+    const startDate = priceHistoryData[0].date;
+    const endDate = priceHistoryData[priceHistoryData.length - 1].date;
+
+    return {
+      startPrice,
+      endPrice,
+      change,
+      changePercent,
+      dateRange: `${startDate} - ${endDate}`,
+    };
+  }, [priceHistoryData]);
+
+  const faqData = [
+    {
+      question: "What sector does Apple Inc (AAPL) operate in?",
+      answer:
+        "Apple Inc belongs to the Information Technology sector and operates in the Consumer Electronics industry.",
+    },
+    {
+      question: "What is Apple Inc (AAPL) current stock price?",
+      answer:
+        "As of the latest data, Apple Inc stock price is $245.27, with a previous close of $254.04. Apple Inc lost -$8.77 in the last trading session, representing a -3.45% loss.",
+    },
+    {
+      question: "What is Apple Inc (AAPL) current market capitalization?",
+      answer: "Apple Inc market cap is approximately 3.64 trillion.",
+    },
+    {
+      question: "What is Apple Inc (AAPL) Earnings Per Share (EPS)?",
+      answer: "The trailing EPS is $6.58, and the forward EPS is $7.94.",
+    },
+    {
+      question: "What is Apple Inc (AAPL) Price-to-Earnings (P/E) ratio?",
+      answer:
+        "Apple Inc current P/E ratio is 37.28, with a forward P/E of 30.87.",
+    },
+    {
+      question: "What is Apple Inc (AAPL) EBITDA?",
+      answer:
+        "Apple Inc EBITDA (Earnings Before Interest, Taxes, Depreciation, and Amortization) is 31.03 billion.",
+    },
+    {
+      question: "Does Apple Inc (AAPL) pay dividends?",
+      answer:
+        "Yes, Apple Inc pays quarterly dividends with an annualized yield of 0.42% and an estimated annual payout of $1.04 per share.",
+    },
+    {
+      question: "When is the next ex-dividend date for Apple Inc (AAPL)?",
+      answer: "The next ex-dividend date is scheduled for November 11, 2025.",
+    },
+    {
+      question:
+        "How did Apple Inc (AAPL) perform in its most recent earnings report?",
+      answer:
+        "In the last report (June 30, 2025), Apple Inc posted an EPS surprise of 11.35% and a revenue surprise of 5.47%.",
+    },
+    {
+      question: "When is Apple Inc (AAPL) next earnings report?",
+      answer:
+        "Apple Inc is expected to release its next earnings report on September 30, 2025.",
+    },
+    {
+      question: "What is Apple Inc (AAPL) beta (volatility) score?",
+      answer:
+        "Apple Inc has a beta of 1.165, meaning its volatility is roughly in line with the market.",
+    },
+  ];
+
+  const toggleFAQ = (index: number) => {
+    setOpenFAQ(openFAQ === index ? null : index);
+  };
+
+  const faqQuestions = [
+    "What sector does Apple Inc (AAPL) operate in?",
+    "What is Apple Inc (AAPL) current stock price?",
+    "What is Apple Inc (AAPL) current market capitalization?",
+    "What is Apple Inc (AAPL) price-to-earnings ratio?",
+    "What is Apple Inc (AAPL) price-to-book ratio?",
+    "What is Apple Inc (AAPL) current P/E ratio?",
+    "What is Apple Inc (AAPL) PEG ratio?",
+    "How does Apple Inc (AAPL) perform vs its most recent earnings report?",
+    "What does Apple Inc (AAPL) company do?",
+    "What is Apple Inc (AAPL) book value/equity ratio?",
+  ];
+>>>>>>> 458872ab93299f0ba6be041292096b892bc377d9
 
   return (
     <div className="bg-white min-h-screen">
@@ -102,8 +267,8 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
                         key={period}
                         onClick={() => setSelectedPeriod(period)}
                         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedPeriod === period
-                            ? "bg-blue-50 text-blue-700 border border-blue-200"
-                            : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                          ? "bg-blue-50 text-blue-700 border border-blue-200"
+                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
                           }`}
                       >
                         {period}
@@ -122,220 +287,34 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
                   </button>
                 </div>
 
-                {/* Performance indicator moved here */}
+                {/* Performance indicator */}
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-500 font-medium">
-                    Oct 11, 24 - Oct 11, 25
+                    {isStealthMode ? "•••• - ••••" : performanceMetrics.dateRange}
                   </span>
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-green-600 font-semibold">
-                    +$17.72 (▲ 7.79%)
+                  <span
+                    className={`font-semibold ${performanceMetrics.change >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                      }`}
+                  >
+                    {isStealthMode
+                      ? "••••"
+                      : `${performanceMetrics.change >= 0 ? "+" : ""}$${performanceMetrics.change.toFixed(2)} (${performanceMetrics.change >= 0 ? "▲" : "▼"} ${Math.abs(performanceMetrics.changePercent).toFixed(2)}%)`}
                   </span>
                 </div>
               </div>
 
-              {/* Chart Container - Flex grow to fill remaining space */}
-              <div className="relative flex-1 min-h-[400px] bg-white">
-                {/* Professional Chart SVG with Min/Max Indicators */}
-                <svg
-                  className="w-full h-full"
-                  viewBox="0 0 1000 400"
-                  role="img"
-                  aria-label="Price history Nov '24 – Oct '25"
-                >
-                  <defs>
-                    {/* Gradient fill under the line */}
-                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="0%"
-                        stopColor="#60A5FA"
-                        stopOpacity="0.40"
-                      />
-                      <stop offset="100%" stopColor="#60A5FA" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Background */}
-                  <rect x="0" y="0" width="100%" height="100%" fill="#FAFAFA" />
-
-                  {/* Grid lines */}
-                  <g stroke="#E5E7EB" strokeWidth="1">
-                    <line x1="70" x2="960" y1="340" y2="340" />
-                    <line x1="70" x2="960" y1="288.33" y2="288.33" />
-                    <line x1="70" x2="960" y1="236.67" y2="236.67" />
-                    <line x1="70" x2="960" y1="185" y2="185" />
-                    <line x1="70" x2="960" y1="133.33" y2="133.33" />
-                    <line x1="70" x2="960" y1="81.67" y2="81.67" />
-                    <line x1="70" x2="960" y1="30" y2="30" />
-                  </g>
-
-                  {/* Y-axis labels */}
-                  <g
-                    fontFamily="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial"
-                    fontSize="12"
-                    fill="#6B7280"
-                    textAnchor="end"
-                  >
-                    <text x="60" y="343">
-                      160
-                    </text>
-                    <text x="60" y="291.33">
-                      180
-                    </text>
-                    <text x="60" y="239.67">
-                      200
-                    </text>
-                    <text x="60" y="188">
-                      220
-                    </text>
-                    <text x="60" y="136.33">
-                      240
-                    </text>
-                    <text x="60" y="84.67">
-                      260
-                    </text>
-                    <text x="60" y="33">
-                      280
-                    </text>
-                  </g>
-
-                  {/* X-axis labels */}
-                  <g
-                    fontFamily="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial"
-                    fontSize="12"
-                    fill="#6B7280"
-                    textAnchor="middle"
-                  >
-                    <text x="70" y="370">
-                      Nov '24
-                    </text>
-                    <text x="150.91" y="370">
-                      Dec '24
-                    </text>
-                    <text x="231.82" y="370">
-                      2025
-                    </text>
-                    <text x="312.73" y="370">
-                      Feb '25
-                    </text>
-                    <text x="393.64" y="370">
-                      Mar '25
-                    </text>
-                    <text x="474.55" y="370">
-                      Apr '25
-                    </text>
-                    <text x="555.45" y="370">
-                      May '25
-                    </text>
-                    <text x="636.36" y="370">
-                      Jun '25
-                    </text>
-                    <text x="717.27" y="370">
-                      Jul '25
-                    </text>
-                    <text x="798.18" y="370">
-                      Aug '25
-                    </text>
-                    <text x="879.09" y="370">
-                      Sep '25
-                    </text>
-                    <text x="960" y="370">
-                      Oct '25
-                    </text>
-                  </g>
-
-                  {/* Area under line */}
-                  <path
-                    d="
-                      M 70 159.2
-                      C 110 159.2, 110 177.3, 150.91 177.3
-                      C 190.91 177.3, 191 164.3, 231.82 164.3
-                      C 271.82 164.3, 273 120.4, 312.73 120.4
-                      C 352.73 120.4, 354 86.8, 393.64 86.8
-                      C 433.64 86.8, 435 309, 474.55 309
-                      C 514.55 309, 516 236.67, 555.45 236.67
-                      C 595.45 236.67, 597 241.83, 636.36 241.83
-                      C 676.36 241.83, 678 223.75, 717.27 223.75
-                      C 757.27 223.75, 759 159.2, 798.18 159.2
-                      C 838.18 159.2, 840 120.4, 879.09 120.4
-                      C 919.09 120.4, 921 107.5, 960 107.5
-                      L 960 340 L 70 340 Z"
-                    fill="url(#areaGrad)"
-                  />
-
-                  {/* Price line */}
-                  <path
-                    d="
-                      M 70 159.2
-                      C 110 159.2, 110 177.3, 150.91 177.3
-                      C 190.91 177.3, 191 164.3, 231.82 164.3
-                      C 271.82 164.3, 273 120.4, 312.73 120.4
-                      C 352.73 120.4, 354 86.8, 393.64 86.8
-                      C 433.64 86.8, 435 309, 474.55 309
-                      C 514.55 309, 516 236.67, 555.45 236.67
-                      C 595.45 236.67, 597 241.83, 636.36 241.83
-                      C 676.36 241.83, 678 223.75, 717.27 223.75
-                      C 757.27 223.75, 759 159.2, 798.18 159.2
-                      C 838.18 159.2, 840 120.4, 879.09 120.4
-                      C 919.09 120.4, 921 107.5, 960 107.5"
-                    fill="none"
-                    stroke="#3B82F6"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Current price dot */}
-                  <circle
-                    cx="960"
-                    cy="107.5"
-                    r="4.5"
-                    fill="#3B82F6"
-                    stroke="#FFFFFF"
-                    strokeWidth="2"
-                  />
-
-                  {/* Max line + label - Full width */}
-                  <line
-                    x1="70"
-                    x2="960"
-                    y1="86.8"
-                    y2="86.8"
-                    stroke="#9CA3AF"
-                    strokeDasharray="4,2"
-                    strokeWidth="1"
-                  />
-                  <text
-                    x="960"
-                    y="82"
-                    textAnchor="end"
-                    fill="#6B7280"
-                    fontSize="12"
-                    fontFamily="system-ui"
-                  >
-                    max: $259.02
-                  </text>
-
-                  {/* Min line + label - Full width */}
-                  <line
-                    x1="70"
-                    x2="960"
-                    y1="309"
-                    y2="309"
-                    stroke="#9CA3AF"
-                    strokeDasharray="4,2"
-                    strokeWidth="1"
-                  />
-                  <text
-                    x="960"
-                    y="322"
-                    textAnchor="end"
-                    fill="#6B7280"
-                    fontSize="12"
-                    fontFamily="system-ui"
-                  >
-                    min: $172.42
-                  </text>
-                </svg>
+              {/* Chart Container - Sử dụng PriceHistoryChart component */}
+              <div className="relative min-h-[450px] bg-white">
+                <PriceHistoryChart
+                  data={priceHistoryData}
+                  height={450}
+                  isStealthMode={isStealthMode}
+                  showMinMax={true}
+                  color="#3B82F6"
+                />
               </div>
             </Card>
           </div>
@@ -350,15 +329,15 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">P/E</span>
-                  <span className="font-medium">37.3</span>
+                  <span className="font-medium text-gray-900">37.3</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">EPS</span>
-                  <span className="font-medium">6.58</span>
+                  <span className="font-medium text-gray-900">6.58</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Beta</span>
-                  <span className="font-medium">1.165</span>
+                  <span className="font-medium text-gray-900">1.165</span>
                 </div>
               </div>
             </Card>
@@ -392,11 +371,11 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">P/E (FWD)</span>
-                  <span className="font-medium">30.9</span>
+                  <span className="font-medium text-gray-900">30.9</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">EPS (FWD)</span>
-                  <span className="font-medium">7.944</span>
+                  <span className="font-medium text-gray-900">7.944</span>
                 </div>
               </div>
             </Card>
@@ -409,31 +388,31 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Dividend yield</span>
-                  <span className="font-medium">0.42%</span>
+                  <span className="font-medium text-gray-900">0.42%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Annual payout</span>
-                  <span className="font-medium">$1.04</span>
+                  <span className="font-medium text-gray-900">$1.04</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Next ex. div date</span>
-                  <span className="font-medium">November 11, 25</span>
+                  <span className="font-medium text-gray-900">November 11, 25</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Payout</span>
-                  <span className="font-medium">15.47%</span>
+                  <span className="font-medium text-gray-900">15.47%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Div.growth, 5y</span>
-                  <span className="font-medium">4.99%</span>
+                  <span className="font-medium text-gray-900">4.99%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Dividend growth streak</span>
-                  <span className="font-medium">1 year</span>
+                  <span className="font-medium text-gray-900">1 year</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Div.rating</span>
-                  <span className="font-medium text-gray-400">⭐</span>
+                  <span className="font-medium text-yellow-500">⭐</span>
                 </div>
               </div>
             </Card>

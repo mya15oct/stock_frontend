@@ -1,0 +1,18 @@
+src/app/(main)/stocks/[ticker]/(components)/stock-header.tsx:124: leftover conflict marker
+src/app/(main)/stocks/[ticker]/(components)/stock-header.tsx:154: leftover conflict marker
+src/app/(main)/stocks/[ticker]/(components)/stock-header.tsx:157: trailing whitespace.
+[32m+[m[32m            <Tooltip[m[41m [m
+src/app/(main)/stocks/[ticker]/(components)/stock-header.tsx:170: trailing whitespace.
+[32m+[m[32m            <Tooltip[m[41m [m
+src/app/(main)/stocks/[ticker]/(components)/stock-header.tsx:183: trailing whitespace.
+[32m+[m[32m            <Tooltip[m[41m [m
+src/app/(main)/stocks/[ticker]/(components)/stock-header.tsx:196: trailing whitespace.
+[32m+[m[32m            <Tooltip[m[41m [m
+src/app/(main)/stocks/[ticker]/(components)/stock-header.tsx:209: trailing whitespace.
+[32m+[m[32m            <Tooltip[m[41m [m
+src/app/(main)/stocks/[ticker]/(components)/stock-header.tsx:218: leftover conflict marker
+src/app/(main)/stocks/[ticker]/(components)/tabs/tab-financials.tsx:117: trailing whitespace.
+[32m+[m[41m    [m
+src/app/(main)/stocks/[ticker]/(components)/tabs/tab-financials.tsx:142: trailing whitespace.
+[32m+[m[41m    [m
+src/app/(main)/stocks/[ticker]/(components)/tabs/tab-overview.tsx:181: leftover conflict marker

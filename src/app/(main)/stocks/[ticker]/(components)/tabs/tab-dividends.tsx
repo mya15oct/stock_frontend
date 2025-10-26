@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card'
 import { useStealthMode } from '@/contexts/StealthContext'
-import PromotionalBanner from '@/components/PromotionalBanner'
+import PromotionalBanner from '@/components/ui/PromotionalBanner'
 
 interface DividendsTabProps {
   ticker: string

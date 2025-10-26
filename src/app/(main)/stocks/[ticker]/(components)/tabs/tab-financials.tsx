@@ -8,8 +8,9 @@ import type {
   StatementType,
   Stock,
 } from "@/types";
-import PromotionalBanner from "@/components/PromotionalBanner";
+import PromotionalBanner from "@/components/ui/PromotionalBanner";
 import { AnimatedBarChart, CHART_COLORS } from "@/components/charts";
+import { formatFinancialNumber, getFinancialScale } from "@/utils/format";
 
 interface FinancialsTabProps {
   ticker: string;
@@ -109,13 +110,49 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
     });
   };
 
+  // Calculate the best scale for Y-axis based on selected metrics
+  const getChartScale = () => {
+    const chartData = getChartData();
+    const allValues: number[] = [];
+
+    chartData.forEach((dataPoint) => {
+      selectedMetrics.forEach((metric) => {
+        const value = dataPoint[metric];
+        if (typeof value === 'number' && !isNaN(value)) {
+          allValues.push(Math.abs(value));
+        }
+      });
+    });
+
+    if (allValues.length === 0) {
+      return { divisor: 1, label: "USD" };
+    }
+
+    const scale = getFinancialScale(allValues);
+    return {
+      divisor: scale.divisor,
+      label: `USD ${scale.label}`,
+    };
+  };
+
+  // Format for table: Always show in Millions, no suffix
+  const formatValueForTable = (value: number | undefined) => {
+    if (isStealthMode) return "••••";
+    if (value === undefined) return "-";
+
+    // Convert to millions and format with comma separator
+    const inMillions = value / 1e6;
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(inMillions);
+  };
+
+  // Format for chart: Keep the original function with M/B suffix
   const formatValue = (value: number | undefined) => {
     if (isStealthMode) return "••••";
     if (value === undefined) return "-";
-    return value.toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
+    return formatFinancialNumber(value);
   };
 
   const getCurrentData = (): FinancialDataResponse | null => {
@@ -211,7 +248,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                       key={period}
                       className="py-3 px-6 text-right text-gray-700 text-sm"
                     >
-                      {formatValue(values[period])}
+                      {formatValueForTable(values[period])}
                     </td>
                   ))}
                 </tr>
@@ -235,8 +272,8 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           <button
             onClick={() => setActiveTab("income")}
             className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-colors ${activeTab === "income"
-                ? "bg-gray-800 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-gray-800 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
           >
             Income statement
@@ -244,8 +281,8 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           <button
             onClick={() => setActiveTab("balance")}
             className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-colors ${activeTab === "balance"
-                ? "bg-gray-800 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-gray-800 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
           >
             Balance sheet
@@ -253,8 +290,8 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           <button
             onClick={() => setActiveTab("cashflow")}
             className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-colors ${activeTab === "cashflow"
-                ? "bg-gray-800 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-gray-800 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
           >
             Cash flow
@@ -262,8 +299,8 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           <button
             onClick={() => setActiveTab("statistics")}
             className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-colors ${activeTab === "statistics"
-                ? "bg-gray-800 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-gray-800 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
           >
             Statistics
@@ -343,17 +380,24 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
               Clear all
             </button>
           </div>
-          <AnimatedBarChart
-            data={getChartData()}
-            metrics={selectedMetrics.filter(
-              (m) => getCurrentData()?.data[m] !== undefined
-            )}
-            colors={CHART_COLORS.primary}
-            height={400}
-            isStealthMode={isStealthMode}
-            animationDuration={1200}
-            staggerDelay={100}
-          />
+          {(() => {
+            const scale = getChartScale();
+            return (
+              <AnimatedBarChart
+                data={getChartData()}
+                metrics={selectedMetrics.filter(
+                  (m) => getCurrentData()?.data[m] !== undefined
+                )}
+                colors={CHART_COLORS.primary}
+                height={400}
+                isStealthMode={isStealthMode}
+                animationDuration={1200}
+                staggerDelay={100}
+                yAxisLabel={scale.label}
+                yAxisDivisor={scale.divisor}
+              />
+            );
+          })()}
         </Card>
       )}
 
