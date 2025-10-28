@@ -137,16 +137,21 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
   };
 
   // Format for table: Always show in Millions, no suffix
+  // Negative values shown as (12,345) in red
   const formatValueForTable = (value: number | undefined) => {
     if (isStealthMode) return "••••";
     if (value === undefined) return "-";
 
     // Convert to millions and format with comma separator
     const inMillions = value / 1e6;
-    return new Intl.NumberFormat("en-US", {
+    const absValue = Math.abs(inMillions);
+    const formatted = new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(inMillions);
+    }).format(absValue);
+
+    // Negative values: (12,345) format
+    return inMillions < 0 ? `(${formatted})` : formatted;
   };
 
   // Format for chart: Keep the original function with M/B suffix
@@ -255,8 +260,8 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
     const sortedData = sortFinancialData(data.data);
 
     return (
-      <div className="overflow-x-auto overflow-y-visible">
-        {/* Header Section */}
+      <div>
+        {/* Header Section - Fixed */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center gap-2 text-sm">
             <span className="font-semibold text-gray-900 dark:text-white">{getTabTitle()}</span>
@@ -270,97 +275,108 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           </div>
         </div>
 
-        <table className="w-full text-sm relative">
-          <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-[200]">
-            <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-3 px-6 font-medium text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800 z-[200]">
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 text-gray-400 dark:text-gray-500">⋮</span>
-                  <span>Line Item</span>
-                </div>
-              </th>
-              {data.periods.map((period) => (
-                <th
-                  key={period}
-                  className="text-right py-3 px-6 font-medium text-gray-600 dark:text-gray-400 min-w-[120px] bg-gray-50 dark:bg-gray-800"
-                >
-                  {period}
+        {/* Table Container - Scrollable */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm relative border-collapse">
+            <thead className="sticky top-0 isolate" style={{ transform: 'translateZ(0)' }}>
+              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <th className="text-left py-3 px-6 font-medium text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 text-gray-400 dark:text-gray-500">⋮</span>
+                    <span>Line Item</span>
+                  </div>
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="relative">
-            {sortedData.map(([itemName, values], index) => {
-              const isSelected = selectedMetrics.includes(itemName);
-              const selectedIndex = selectedMetrics.indexOf(itemName);
-              const barColor = isSelected
-                ? CHART_COLORS.primary[
-                selectedIndex % CHART_COLORS.primary.length
-                ]
-                : "transparent";
+                {data.periods.map((period) => (
+                  <th
+                    key={period}
+                    className="text-right py-3 px-6 font-medium text-gray-600 dark:text-gray-400 min-w-[120px] bg-gray-50 dark:bg-gray-800"
+                  >
+                    {period}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="relative">
+              {sortedData.map(([itemName, values], index) => {
+                const isSelected = selectedMetrics.includes(itemName);
+                const selectedIndex = selectedMetrics.indexOf(itemName);
+                const barColor = isSelected
+                  ? CHART_COLORS.primary[
+                  selectedIndex % CHART_COLORS.primary.length
+                  ]
+                  : "transparent";
 
-              // Calculate background for sticky cell to match row
-              const getLineCellBg = () => {
-                if (isSelected) {
-                  return "bg-blue-50 dark:bg-blue-900/30";
-                }
-                return index % 2 === 0 
-                  ? "bg-gray-50/50 dark:bg-gray-800/50" 
-                  : "bg-white dark:bg-gray-900";
-              };
+                // Calculate background for sticky cell to match row
+                const getLineCellBg = () => {
+                  if (isSelected) {
+                    return "bg-blue-50 dark:bg-blue-900";
+                  }
+                  return index % 2 === 0
+                    ? "bg-gray-50 dark:bg-gray-800"
+                    : "bg-white dark:bg-gray-900";
+                };
 
-              const getLineCellHoverBg = () => {
-                if (isSelected) {
-                  return "group-hover:!bg-blue-100 dark:group-hover:!bg-blue-900/50";
-                }
-                return "group-hover:bg-gray-100 dark:group-hover:bg-gray-800";
-              };
+                const getLineCellHoverBg = () => {
+                  if (isSelected) {
+                    return "group-hover:!bg-blue-100 dark:group-hover:!bg-blue-800";
+                  }
+                  return "group-hover:bg-gray-100 dark:group-hover:bg-gray-800";
+                };
 
-              return (
-                <tr
-                  key={itemName}
-                  onClick={() => toggleMetric(itemName)}
-                  className={`group border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all relative ${index % 2 === 0 ? "bg-gray-50/50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"
-                    } ${isSelected
-                      ? "!bg-blue-50 dark:!bg-blue-900/30 hover:!bg-blue-100 dark:hover:!bg-blue-900/50"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                    } hover:z-[160]`}
-                >
-                  <td className={`py-3 px-6 text-gray-700 dark:text-gray-300 sticky left-0 z-[150] relative transition-colors ${getLineCellBg()} ${getLineCellHoverBg()}`}>
-                    <div className="relative flex items-center gap-2">
-                      <div
-                        className="w-1 h-6 rounded-full transition-all"
-                        style={{
-                          backgroundColor: barColor,
-                          opacity: isSelected ? 1 : 0
-                        }}
-                      />
-                      <Tooltip
-                        content={getMetricTooltip(itemName)}
-                        position="right"
-                      >
-                        <span
-                          className={`text-sm cursor-help ${isSelected ? "font-medium text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"
+                return (
+                  <tr
+                    key={itemName}
+                    onClick={() => toggleMetric(itemName)}
+                    className={`group border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all relative ${index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800" : "bg-white dark:bg-gray-900"
+                      } ${isSelected
+                        ? "!bg-blue-50 dark:!bg-blue-900 hover:!bg-blue-100 dark:hover:!bg-blue-800"
+                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`}
+                  >
+                    <td className={`py-3 px-6 text-gray-700 dark:text-gray-300 sticky left-0 relative transition-colors ${getLineCellBg()} ${getLineCellHoverBg()}`}>
+                      <div className="relative flex items-center gap-2">
+                        <div
+                          className="w-1 h-6 rounded-full transition-all"
+                          style={{
+                            backgroundColor: barColor,
+                            opacity: isSelected ? 1 : 0
+                          }}
+                        />
+                        <Tooltip
+                          content={getMetricTooltip(itemName)}
+                          position="right"
+                        >
+                          <span
+                            className={`text-sm cursor-help ${isSelected ? "font-medium text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"
+                              }`}
+                          >
+                            {itemName}
+                          </span>
+                        </Tooltip>
+                      </div>
+                    </td>
+                    {data.periods.map((period) => {
+                      const cellValue = values[period];
+                      const isNegative = cellValue !== undefined && cellValue < 0;
+
+                      return (
+                        <td
+                          key={period}
+                          className={`py-3 px-6 text-right text-sm ${isNegative
+                            ? 'text-red-600 dark:text-red-400'
+                            : 'text-gray-700 dark:text-gray-300'
                             }`}
                         >
-                          {itemName}
-                        </span>
-                      </Tooltip>
-                    </div>
-                  </td>
-                  {data.periods.map((period) => (
-                    <td
-                      key={period}
-                      className="py-3 px-6 text-right text-gray-700 dark:text-gray-300 text-sm"
-                    >
-                      {formatValueForTable(values[period])}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                          {formatValueForTable(cellValue)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   };
@@ -507,7 +523,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
       )}
 
       {/* Data Card */}
-      <Card className="p-0 overflow-x-hidden overflow-y-visible">
+      <Card className="p-0 overflow-visible">
 
         {loading && (
           <div className="text-center py-12 px-6">

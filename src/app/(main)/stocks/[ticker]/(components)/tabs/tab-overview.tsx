@@ -112,9 +112,9 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
         <PromotionalBanner />
 
         {/* Main Chart + Metrics Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Left Column - Benchmarks + Price History (takes 2/3 width) */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+          {/* Left Column - Benchmarks + Price History (takes 3/4 width) */}
+          <div className="lg:col-span-3 flex flex-col gap-6">
             {/* Benchmarks - Top Left */}
             <Card>
               <div className="flex justify-between items-center">
@@ -244,7 +244,7 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
             </Card>
           </div>
 
-          {/* Right Column - All Metrics (takes 1/3 width) */}
+          {/* Right Column - All Metrics (takes 1/4 width) */}
           <div className="lg:col-span-1 flex flex-col gap-4">
             {/* Estimate */}
             <Card>
