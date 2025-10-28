@@ -11,6 +11,7 @@ import type {
 import PromotionalBanner from "@/components/ui/PromotionalBanner";
 import { AnimatedBarChart, CHART_COLORS } from "@/components/charts";
 import { formatFinancialNumber, getFinancialScale } from "@/utils/format";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface FinancialsTabProps {
   ticker: string;
@@ -181,19 +182,101 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
     }
   };
 
+  // Tooltip descriptions for financial metrics
+  const getMetricTooltip = (metricName: string): string => {
+    const tooltips: Record<string, string> = {
+      "Total Revenue": "The total amount of money generated from sales of goods or services before any expenses are deducted.",
+      "Gross Profit": "Revenue minus Cost of Goods Sold (COGS). Shows profitability before operating expenses.",
+      "Cost Of Revenue": "Direct costs attributable to the production of goods sold or services provided.",
+      "Costof Goods And Services Sold": "Direct costs attributable to the production of goods sold or services provided.",
+      "Operating Income": "Profit from core business operations before interest and taxes (EBIT).",
+      "Net Income": "The bottom line profit after all expenses, taxes, and costs have been deducted from revenue.",
+      "EBITDA": "Earnings Before Interest, Taxes, Depreciation, and Amortization. A measure of operating performance.",
+      "Operating Expenses": "Costs incurred in running the day-to-day business operations.",
+      "Research And Development": "Expenses related to researching and developing new products or services.",
+      "Selling General And Administrative": "Overhead costs including sales, marketing, and administrative expenses.",
+      "Total Assets": "Sum of all assets owned by the company, including current and non-current assets.",
+      "Total Liabilities": "Sum of all debts and obligations the company owes.",
+      "Stockholders Equity": "The residual interest in assets after deducting liabilities. Also known as shareholders' equity.",
+      "Cash And Cash Equivalents": "Liquid assets including cash on hand and short-term investments easily convertible to cash.",
+      "Total Current Assets": "Assets expected to be converted to cash or used within one year.",
+      "Total Current Liabilities": "Obligations due within one year.",
+      "Operating Cash Flow": "Cash generated from normal business operations.",
+      "Free Cash Flow": "Cash flow available after capital expenditures. Indicates financial flexibility.",
+      "Capital Expenditures": "Funds used to acquire or upgrade physical assets like property, equipment, or technology.",
+      "Investing Cash Flow": "Cash used for investments in assets, securities, or acquisitions.",
+      "Financing Cash Flow": "Cash flow from transactions with the company's owners and creditors.",
+    };
+
+    return tooltips[metricName] || "Financial metric from the company's financial statements.";
+  };
+
+  // Priority order for common financial metrics (Income Statement)
+  const getMetricPriority = (metricName: string): number => {
+    const priorityOrder: Record<string, number> = {
+      // Top metrics
+      "Total Revenue": 1,
+      "Gross Profit": 2,
+      "Cost Of Revenue": 3,
+      "Costof Goods And Services Sold": 3,
+      "Operating Income": 4,
+      "Operating Expenses": 5,
+      "Net Income": 6,
+      "Research And Development": 7,
+      "Selling General And Administrative": 8,
+      // EBITDA lower priority
+      "EBITDA": 90,
+      "Ebitda": 90,
+    };
+
+    return priorityOrder[metricName] || 50; // Default priority for unlisted metrics
+  };
+
+  // Sort financial data by priority
+  const sortFinancialData = (data: Record<string, Record<string, number>>): Array<[string, Record<string, number>]> => {
+    return Object.entries(data).sort((a, b) => {
+      const priorityA = getMetricPriority(a[0]);
+      const priorityB = getMetricPriority(b[0]);
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // If same priority, sort alphabetically
+      return a[0].localeCompare(b[0]);
+    });
+  };
+
   const renderFinancialTable = () => {
     const data = getCurrentData();
 
     if (!data) return null;
 
+    const sortedData = sortFinancialData(data.data);
+
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto overflow-y-visible">
+        {/* Header Section */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-semibold text-gray-900 dark:text-white">{getTabTitle()}</span>
+            <span className="text-gray-400 dark:text-gray-500">|</span>
+            <span className="text-gray-600 dark:text-gray-400">Company: <span className="font-medium text-gray-900 dark:text-white">{ticker}</span></span>
+            <span className="text-gray-400 dark:text-gray-500">|</span>
+            <span className="text-gray-600 dark:text-gray-400">Period: <span className="font-medium text-gray-900 dark:text-white">{periodType}</span></span>
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Currency: <span className="font-medium text-gray-900 dark:text-white">Millions USD</span>
+          </div>
+        </div>
+
+        <table className="w-full text-sm relative">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr className="border-b border-gray-200 dark:border-gray-700">
               <th className="text-left py-3 px-6 font-medium text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800 z-10">
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 text-gray-400 dark:text-gray-500">⋮</span>
+                  <span>Line Item</span>
                 </div>
               </th>
               {data.periods.map((period) => (
@@ -206,8 +289,8 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
               ))}
             </tr>
           </thead>
-          <tbody>
-            {Object.entries(data.data).map(([itemName, values], index) => {
+          <tbody className="relative">
+            {sortedData.map(([itemName, values], index) => {
               const isSelected = selectedMetrics.includes(itemName);
               const selectedIndex = selectedMetrics.indexOf(itemName);
               const barColor = isSelected
@@ -220,14 +303,14 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                 <tr
                   key={itemName}
                   onClick={() => toggleMetric(itemName)}
-                  className={`border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all ${index % 2 === 0 ? "bg-gray-50/50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"
+                  className={`border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all relative ${index % 2 === 0 ? "bg-gray-50/50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"
                     } ${isSelected
                       ? "!bg-blue-50 dark:!bg-blue-900/30 hover:!bg-blue-100 dark:hover:!bg-blue-900/50"
                       : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }`}
+                    } hover:z-[150]`}
                 >
-                  <td className="py-3 px-6 text-gray-700 dark:text-gray-300 sticky left-0 bg-inherit">
-                    <div className="relative flex items-center gap-2">
+                  <td className="py-3 px-6 text-gray-700 dark:text-gray-300 sticky left-0 bg-inherit z-[100] relative">
+                    <div className="relative flex items-center gap-2 z-[100]">
                       <div
                         className="w-1 h-6 rounded-full transition-all"
                         style={{
@@ -235,12 +318,17 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                           opacity: isSelected ? 1 : 0
                         }}
                       />
-                      <span
-                        className={`text-sm ${isSelected ? "font-medium text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"
-                          }`}
+                      <Tooltip
+                        content={getMetricTooltip(itemName)}
+                        position="right"
                       >
-                        {itemName}
-                      </span>
+                        <span
+                          className={`text-sm cursor-help ${isSelected ? "font-medium text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"
+                            }`}
+                        >
+                          {itemName}
+                        </span>
+                      </Tooltip>
                     </div>
                   </td>
                   {data.periods.map((period) => (
@@ -402,7 +490,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
       )}
 
       {/* Data Card */}
-      <Card className="p-0 overflow-hidden">
+      <Card className="p-0 overflow-x-hidden overflow-y-visible">
 
         {loading && (
           <div className="text-center py-12 px-6">

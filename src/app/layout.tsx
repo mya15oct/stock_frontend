@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { ClientProviders } from "@/components/providers/ClientProviders";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,11 +23,13 @@ export default function RootLayout({
       <body
         className={`${inter.className} min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors`}
       >
-        <ClientProviders>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </ClientProviders>
+        <ErrorBoundary>
+          <ClientProviders>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </ClientProviders>
+        </ErrorBoundary>
       </body>
     </html>
   );

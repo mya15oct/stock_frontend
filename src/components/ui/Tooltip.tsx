@@ -8,29 +8,29 @@ export interface TooltipProps {
    * Nội dung hiển thị trong tooltip
    */
   content: ReactNode;
-  
+
   /**
    * Element sẽ trigger tooltip khi hover
    */
   children: ReactNode;
-  
+
   /**
    * Vị trí tooltip so với element
    * @default "top"
    */
   position?: "top" | "bottom" | "left" | "right";
-  
+
   /**
    * Delay trước khi hiển thị (ms)
    * @default 200
    */
   delay?: number;
-  
+
   /**
    * Custom className cho tooltip container
    */
   className?: string;
-  
+
   /**
    * Disable tooltip
    * @default false
@@ -80,7 +80,7 @@ export function Tooltip({
 
   const handleMouseEnter = () => {
     if (disabled) return;
-    
+
     setShouldRender(true);
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true);
@@ -126,16 +126,16 @@ export function Tooltip({
       onMouseLeave={handleMouseLeave}
     >
       {children}
-      
+
       {shouldRender && (
         <div
           ref={tooltipRef}
           role="tooltip"
           className={cn(
             // Base styles
-            "absolute z-50 pointer-events-none",
+            "absolute z-[9999] pointer-events-none",
             // Tooltip box - Snowball style
-            "px-4 py-3 text-sm text-gray-700 bg-white rounded-xl shadow-xl border border-gray-100",
+            "px-4 py-3 text-sm text-gray-700 bg-white rounded-xl shadow-2xl border border-gray-200",
             "min-w-[300px] max-w-md break-words leading-relaxed",
             // Animation
             "transition-opacity duration-200",
@@ -147,7 +147,7 @@ export function Tooltip({
           )}
         >
           {content}
-          
+
           {/* Arrow pointing to element */}
           <div
             className={cn(
