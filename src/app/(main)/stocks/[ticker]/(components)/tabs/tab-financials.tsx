@@ -271,9 +271,9 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
         </div>
 
         <table className="w-full text-sm relative">
-          <thead className="bg-gray-50 dark:bg-gray-800">
+          <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-[200]">
             <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-3 px-6 font-medium text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800 z-10">
+              <th className="text-left py-3 px-6 font-medium text-gray-600 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800 z-[200]">
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 text-gray-400 dark:text-gray-500">⋮</span>
                   <span>Line Item</span>
@@ -282,7 +282,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
               {data.periods.map((period) => (
                 <th
                   key={period}
-                  className="text-right py-3 px-6 font-medium text-gray-600 dark:text-gray-400 min-w-[120px]"
+                  className="text-right py-3 px-6 font-medium text-gray-600 dark:text-gray-400 min-w-[120px] bg-gray-50 dark:bg-gray-800"
                 >
                   {period}
                 </th>
@@ -299,18 +299,35 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                 ]
                 : "transparent";
 
+              // Calculate background for sticky cell to match row
+              const getLineCellBg = () => {
+                if (isSelected) {
+                  return "bg-blue-50 dark:bg-blue-900/30";
+                }
+                return index % 2 === 0 
+                  ? "bg-gray-50/50 dark:bg-gray-800/50" 
+                  : "bg-white dark:bg-gray-900";
+              };
+
+              const getLineCellHoverBg = () => {
+                if (isSelected) {
+                  return "group-hover:!bg-blue-100 dark:group-hover:!bg-blue-900/50";
+                }
+                return "group-hover:bg-gray-100 dark:group-hover:bg-gray-800";
+              };
+
               return (
                 <tr
                   key={itemName}
                   onClick={() => toggleMetric(itemName)}
-                  className={`border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all relative ${index % 2 === 0 ? "bg-gray-50/50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"
+                  className={`group border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all relative ${index % 2 === 0 ? "bg-gray-50/50 dark:bg-gray-800/50" : "bg-white dark:bg-gray-900"
                     } ${isSelected
                       ? "!bg-blue-50 dark:!bg-blue-900/30 hover:!bg-blue-100 dark:hover:!bg-blue-900/50"
                       : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                    } hover:z-[150]`}
+                    } hover:z-[160]`}
                 >
-                  <td className="py-3 px-6 text-gray-700 dark:text-gray-300 sticky left-0 bg-inherit z-[100] relative">
-                    <div className="relative flex items-center gap-2 z-[100]">
+                  <td className={`py-3 px-6 text-gray-700 dark:text-gray-300 sticky left-0 z-[150] relative transition-colors ${getLineCellBg()} ${getLineCellHoverBg()}`}>
+                    <div className="relative flex items-center gap-2">
                       <div
                         className="w-1 h-6 rounded-full transition-all"
                         style={{
