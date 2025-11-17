@@ -92,6 +92,12 @@ const MOCK_NEWS: FeaturedNews[] = [
 export default function FeaturedNewsPanel() {
   const [news, setNews] = useState<FeaturedNews[]>(MOCK_NEWS);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Fix hydration error by only rendering time on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load initial news (disabled for now, using mock data)
   useEffect(() => {
@@ -229,7 +235,7 @@ export default function FeaturedNewsPanel() {
                   {/* Meta info */}
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] text-gray-500">
-                      {formatTimeAgo(article.publishedAt)}
+                      {mounted ? formatTimeAgo(article.publishedAt) : '...'}
                     </span>
 
                     {/* Reactions */}
