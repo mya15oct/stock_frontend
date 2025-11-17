@@ -13,7 +13,7 @@
 
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   ComposedChart,
   Bar,
@@ -22,7 +22,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  ReferenceLine,
+  Cell,
 } from "recharts";
 import type { CandleBar } from "@/types/market";
 
@@ -49,7 +49,7 @@ export default function CandlestickChart({
     const volumes = data.map((d) => d.volume);
 
     return {
-      minPrice: Math.min(...prices) * 0.998, // 0.2% padding
+      minPrice: Math.min(...prices) * 0.998,
       maxPrice: Math.max(...prices) * 1.002,
       maxVolume: Math.max(...volumes),
     };
@@ -57,74 +57,71 @@ export default function CandlestickChart({
 
   // Format data for display
   const chartData = useMemo(() => {
-    return data.map((candle) => ({
+    return data.map((candle, index) => ({
       ...candle,
+      index,
       time: formatTime(candle.time),
-      // Add dummy value for XAxis
       _time: new Date(candle.time).getTime(),
+      // Create range for candlestick body
+      range: [Math.min(candle.open, candle.close), Math.max(candle.open, candle.close)],
+      isUp: candle.close >= candle.open,
     }));
   }, [data]);
 
-  // Custom Candlestick Layer
-  const CandlestickLayer = (props: any) => {
-    const { xAxisMap, yAxisMap, data: chartData } = props;
+  // Custom Candlestick Shape
+  const CandleShape = useCallback((props: any) => {
+    const { x, y, width, height, payload } = props;
+    
+    if (!payload || !x || !y) return null;
 
-    if (!xAxisMap || !yAxisMap || !chartData) return null;
+    const { open, high, low, close, isUp } = payload;
+    const fillColor = isUp ? "#10b981" : "#ef4444";
+    const strokeColor = isUp ? "#059669" : "#dc2626";
 
-    const xAxis = xAxisMap[0];
-    const yAxis = yAxisMap["price"]; // Use price yAxisId
-
-    if (!xAxis || !yAxis) return null;
-
-    const candleWidth = Math.max((xAxis.width / chartData.length) * 0.7, 2);
+    // Calculate positions relative to the chart
+    const chartHeight = props.height || 400;
+    const chartTop = props.y || 0;
+    
+    // Scale values to pixel positions
+    const priceRange = maxPrice - minPrice;
+    const pixelPerPrice = chartHeight / priceRange;
+    
+    const yHigh = chartTop + (maxPrice - high) * pixelPerPrice;
+    const yLow = chartTop + (maxPrice - low) * pixelPerPrice;
+    const yOpen = chartTop + (maxPrice - open) * pixelPerPrice;
+    const yClose = chartTop + (maxPrice - close) * pixelPerPrice;
+    
+    const bodyTop = Math.min(yOpen, yClose);
+    const bodyBottom = Math.max(yOpen, yClose);
+    const bodyHeight = Math.max(bodyBottom - bodyTop, 1);
+    
+    const candleX = x + width / 2;
+    const candleWidth = Math.max(width * 0.9, 5);
 
     return (
       <g>
-        {chartData.map((entry: any, index: number) => {
-          const { open, high, low, close } = entry;
-          const isUp = close >= open;
-          const fillColor = isUp ? "#10b981" : "#ef4444"; // green-500 : red-500
-          const strokeColor = isUp ? "#059669" : "#dc2626"; // green-600 : red-600
-
-          const x = xAxis.scale(entry._time);
-          const candleX = x - candleWidth / 2;
-
-          const yHigh = yAxis.scale(high);
-          const yLow = yAxis.scale(low);
-          const yOpen = yAxis.scale(open);
-          const yClose = yAxis.scale(close);
-
-          const bodyTop = Math.min(yOpen, yClose);
-          const bodyBottom = Math.max(yOpen, yClose);
-          const bodyHeight = Math.max(bodyBottom - bodyTop, 1);
-
-          return (
-            <g key={`candle-${index}`}>
-              {/* Wick - from high to low */}
-              <line
-                x1={x}
-                y1={yHigh}
-                x2={x}
-                y2={yLow}
-                stroke={strokeColor}
-                strokeWidth={1}
-              />
-              {/* Candle body */}
-              <rect
-                x={candleX}
-                y={bodyTop}
-                width={candleWidth}
-                height={bodyHeight}
-                fill={fillColor}
-                stroke={strokeColor}
-                strokeWidth={1}
-              />
-            </g>
-          );
-        })}
+        {/* Wick */}
+        <line
+          x1={candleX}
+          y1={yHigh}
+          x2={candleX}
+          y2={yLow}
+          stroke={strokeColor}
+          strokeWidth={1.5}
+        />
+        {/* Body */}
+        <rect
+          x={candleX - candleWidth / 2}
+          y={bodyTop}
+          width={candleWidth}
+          height={bodyHeight}
+          fill={fillColor}
+          stroke={strokeColor}
+          strokeWidth={1}
+        />
       </g>
     );
-  };
+  }, [minPrice, maxPrice]);
 
   // Custom Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -132,54 +129,39 @@ export default function CandlestickChart({
 
     const data = payload[0].payload;
 
-    // Guard against undefined values
-    if (
-      !data ||
-      typeof data.open === "undefined" ||
-      typeof data.close === "undefined"
-    ) {
+    if (!data || typeof data.open === "undefined" || typeof data.close === "undefined") {
       return null;
     }
 
     const isUp = data.close >= data.open;
 
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-3">
+        <p className="text-xs text-gray-400 mb-2">
           {formatFullTime(data.time)}
         </p>
-        <div className="space-y-1 text-xs">
+        <div className="space-y-1 text-xs text-white">
           <div className="flex justify-between gap-4">
-            <span className="text-gray-600 dark:text-gray-400">Open:</span>
-            <span className="font-semibold">
-              ${data.open?.toFixed(2) ?? "0.00"}
-            </span>
+            <span className="text-gray-400">Open:</span>
+            <span className="font-semibold">{data.open?.toFixed(2) ?? "0.00"}</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-gray-600 dark:text-gray-400">High:</span>
-            <span className="font-semibold text-green-600">
-              ${data.high?.toFixed(2) ?? "0.00"}
-            </span>
+            <span className="text-gray-400">High:</span>
+            <span className="font-semibold text-green-400">{data.high?.toFixed(2) ?? "0.00"}</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-gray-600 dark:text-gray-400">Low:</span>
-            <span className="font-semibold text-red-600">
-              ${data.low?.toFixed(2) ?? "0.00"}
-            </span>
+            <span className="text-gray-400">Low:</span>
+            <span className="font-semibold text-red-400">{data.low?.toFixed(2) ?? "0.00"}</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-gray-600 dark:text-gray-400">Close:</span>
-            <span
-              className={`font-semibold ${
-                isUp ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              ${data.close?.toFixed(2) ?? "0.00"}
+            <span className="text-gray-400">Close:</span>
+            <span className={`font-semibold ${isUp ? "text-green-400" : "text-red-400"}`}>
+              {data.close?.toFixed(2) ?? "0.00"}
             </span>
           </div>
           {showVolume && (
-            <div className="flex justify-between gap-4 pt-1 border-t border-gray-200 dark:border-gray-700">
-              <span className="text-gray-600 dark:text-gray-400">Volume:</span>
+            <div className="flex justify-between gap-4 pt-1 border-t border-gray-700">
+              <span className="text-gray-400">Volume:</span>
               <span className="font-semibold">{formatVolume(data.volume)}</span>
             </div>
           )}
@@ -200,34 +182,36 @@ export default function CandlestickChart({
     <ResponsiveContainer width="100%" height={height}>
       <ComposedChart
         data={chartData}
-        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+        barGap={1}
+        barCategoryGap="8%"
       >
         {showGrid && (
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.15} />
         )}
 
-        {/* X Axis - Time */}
         <XAxis
-          dataKey="_time"
-          type="number"
-          domain={["dataMin", "dataMax"]}
-          tick={{ fill: "#6b7280", fontSize: 11 }}
-          tickFormatter={(value) => formatAxisTime(value)}
+          dataKey="index"
+          tick={{ fill: "#9ca3af", fontSize: 11 }}
+          tickFormatter={(value) => {
+            const item = chartData[value];
+            return item ? formatAxisTime(item._time) : "";
+          }}
           interval="preserveStartEnd"
           minTickGap={50}
+          stroke="#374151"
         />
 
-        {/* Y Axis - Price (Left) */}
         <YAxis
           yAxisId="price"
           orientation="right"
           domain={[minPrice, maxPrice]}
-          tick={{ fill: "#6b7280", fontSize: 11 }}
-          tickFormatter={(value) => `$${value?.toFixed(2) ?? "0.00"}`}
-          width={70}
+          tick={{ fill: "#9ca3af", fontSize: 11 }}
+          tickFormatter={(value) => `${value?.toFixed(2) ?? "0.00"}`}
+          width={65}
+          stroke="#374151"
         />
 
-        {/* Y Axis - Volume (Hidden, for scaling) */}
         {showVolume && (
           <YAxis
             yAxisId="volume"
@@ -237,23 +221,38 @@ export default function CandlestickChart({
           />
         )}
 
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#6b7280", strokeWidth: 1 }} />
 
         {/* Volume Bars */}
         {showVolume && (
           <Bar
             yAxisId="volume"
             dataKey="volume"
-            fill="#94a3b8"
-            opacity={0.3}
+            fill="#6b7280"
+            opacity={0.4}
             isAnimationActive={false}
-          />
+          >
+            {chartData.map((entry, index) => (
+              <Cell
+                key={`vol-${index}`}
+                fill={entry.isUp ? "#10b981" : "#ef4444"}
+                opacity={0.4}
+              />
+            ))}
+          </Bar>
         )}
 
-        {/* Custom Candlestick Rendering */}
-        <g className="candlesticks">
-          <CandlestickLayer />
-        </g>
+        {/* Candlesticks using Bar with custom shape */}
+        <Bar
+          yAxisId="price"
+          dataKey="range"
+          shape={<CandleShape height={height} />}
+          isAnimationActive={false}
+        >
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} />
+          ))}
+        </Bar>
       </ComposedChart>
     </ResponsiveContainer>
   );

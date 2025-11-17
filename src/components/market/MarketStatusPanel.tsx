@@ -21,15 +21,14 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  CartesianGrid,
 } from "recharts";
 import type { MarketStatus, MarketStatusTab } from "@/types/market";
 import { marketService } from "@/services/marketService";
 
 const TABS = [
-  { label: "Biến động", value: "movement" as MarketStatusTab },
-  { label: "Nước ngoài", value: "foreign" as MarketStatusTab },
-  { label: "Tự doanh", value: "proprietary" as MarketStatusTab },
-  { label: "Thanh khoản", value: "liquidity" as MarketStatusTab },
+  { label: "Dòng tiền", value: "movement" as MarketStatusTab },
+  { label: "Tác động tới index", value: "index_impact" as MarketStatusTab },
 ];
 
 const COLORS = {
@@ -67,11 +66,11 @@ export default function MarketStatusPanel() {
 
   if (isLoading || !status) {
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 h-[600px]">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 h-full">
         <div className="animate-pulse space-y-4">
           <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
         </div>
       </div>
     );
@@ -106,7 +105,7 @@ export default function MarketStatusPanel() {
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden h-full flex flex-col">
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex">
@@ -115,7 +114,7 @@ export default function MarketStatusPanel() {
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={`
-                flex-1 px-4 py-3 text-sm font-medium transition-colors
+                flex-1 px-3 py-1.5 text-sm font-medium transition-colors
                 ${
                   activeTab === tab.value
                     ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50 dark:bg-gray-700"
@@ -130,27 +129,55 @@ export default function MarketStatusPanel() {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="flex-1 p-2 overflow-hidden flex items-center">
         {/* Tab: Biến động */}
         {activeTab === "movement" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 w-full">
             {/* LEFT: Pie Chart - Số lượng mã */}
-            <div>
-              <h3 className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-300">
+            <div className="flex flex-col justify-center">
+              <h3 className="text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">
                 Số lượng CP Tăng, Giảm, Không đổi
               </h3>
-              <ResponsiveContainer width="100%" height={160}>
+              <ResponsiveContainer width="100%" height={190}>
                 <PieChart>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={45}
+                    innerRadius={0}
                     outerRadius={70}
-                    paddingAngle={2}
+                    paddingAngle={0}
                     dataKey="value"
-                    label={(entry) => `${entry.name} (${entry.value})`}
-                    labelLine={false}
+                    label={({
+                      cx,
+                      cy,
+                      midAngle,
+                      innerRadius,
+                      outerRadius,
+                      name,
+                      value,
+                    }) => {
+                      const RADIAN = Math.PI / 180;
+                      const radius = outerRadius + 18;
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          fill="currentColor"
+                          textAnchor={x > cx ? "start" : "end"}
+                          dominantBaseline="central"
+                          className="text-xs font-medium"
+                        >
+                          {`${name} (${value})`}
+                        </text>
+                      );
+                    }}
+                    labelLine={{
+                      stroke: "#94a3b8",
+                      strokeWidth: 1,
+                    }}
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -159,48 +186,37 @@ export default function MarketStatusPanel() {
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
-
-              {/* Summary */}
-              <div className="grid grid-cols-3 gap-1 mt-1 text-center text-xs">
-                <div>
-                  <div className="font-bold text-green-600 text-base">
-                    {status.advancing}
-                  </div>
-                  <div className="text-gray-500 text-[10px]">Tăng</div>
-                </div>
-                <div>
-                  <div className="font-bold text-red-600 text-base">
-                    {status.declining}
-                  </div>
-                  <div className="text-gray-500 text-[10px]">Giảm</div>
-                </div>
-                <div>
-                  <div className="font-bold text-yellow-600 text-base">
-                    {status.unchanged}
-                  </div>
-                  <div className="text-gray-500 text-[10px]">Không đổi</div>
-                </div>
-              </div>
             </div>
 
             {/* RIGHT: Bar Chart - Phân bổ dòng tiền */}
-            <div>
-              <h3 className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-300">
+            <div className="flex flex-col justify-center">
+              <h3 className="text-sm font-semibold mb-1 text-gray-700 dark:text-gray-300">
                 Phân bổ dòng tiền
               </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={barData} layout="vertical">
-                  <XAxis type="number" tick={{ fontSize: 10 }} />
-                  <YAxis
+              <ResponsiveContainer width="100%" height={190}>
+                <BarChart
+                  data={barData}
+                  margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
+                >
+                  <XAxis
                     dataKey="name"
-                    type="category"
+                    tick={{ fontSize: 11 }}
+                    stroke="#94a3b8"
+                  />
+                  <YAxis
                     tick={{ fontSize: 10 }}
-                    width={60}
+                    stroke="#94a3b8"
+                    tickFormatter={(value) => `${value.toFixed(0)} tỷ`}
+                    domain={[0, (dataMax: number) => Math.ceil(dataMax / 1000) * 1000]}
+                  />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#374151"
+                    strokeWidth={0.5}
+                    vertical={false}
                   />
                   <Tooltip
-                    formatter={(value: number) =>
-                      `$${value?.toFixed(2) ?? "0.00"}B`
-                    }
+                    formatter={(value: number) => `${value.toFixed(1)} tỷ`}
                     contentStyle={{
                       backgroundColor: "#fff",
                       border: "1px solid #e5e7eb",
@@ -208,7 +224,17 @@ export default function MarketStatusPanel() {
                       fontSize: "12px",
                     }}
                   />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  <Bar
+                    dataKey="value"
+                    radius={[4, 4, 0, 0]}
+                    label={{
+                      position: "top",
+                      formatter: (value: number) => `${value.toFixed(1)} tỷ`,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      fill: "currentColor",
+                    }}
+                  >
                     {barData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -219,60 +245,10 @@ export default function MarketStatusPanel() {
           </div>
         )}
 
-        {/* Tab: Nước ngoài */}
-        {activeTab === "foreign" && status.foreignTrading && (
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Giao dịch Nhà đầu tư nước ngoài
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Mua
-                </span>
-                <span className="text-lg font-bold text-green-600">
-                  ${status.foreignTrading?.buy?.toFixed(2) ?? "0.00"}M
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Bán
-                </span>
-                <span className="text-lg font-bold text-red-600">
-                  ${status.foreignTrading?.sell?.toFixed(2) ?? "0.00"}M
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Mua ròng
-                </span>
-                <span
-                  className={`text-lg font-bold ${
-                    (status.foreignTrading?.net ?? 0) >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {(status.foreignTrading?.net ?? 0) >= 0 ? "+" : ""}$
-                  {status.foreignTrading?.net?.toFixed(2) ?? "0.00"}M
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab: Tự doanh */}
-        {activeTab === "proprietary" && (
-          <div className="text-center py-12 text-gray-400">
-            <p className="text-sm">Dữ liệu tự doanh đang được cập nhật</p>
-            <p className="text-xs mt-2">Coming soon...</p>
-          </div>
-        )}
-
-        {/* Tab: Thanh khoản */}
-        {activeTab === "liquidity" && (
-          <div className="text-center py-12 text-gray-400">
-            <p className="text-sm">Dữ liệu thanh khoản đang được cập nhật</p>
+        {/* Tab: Tác động tới index */}
+        {activeTab === "index_impact" && (
+          <div className="w-full text-center py-12 text-gray-400">
+            <p className="text-sm">Dữ liệu tác động tới index đang được cập nhật</p>
             <p className="text-xs mt-2">Coming soon...</p>
           </div>
         )}

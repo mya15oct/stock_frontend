@@ -31,44 +31,82 @@ export default function HeatmapChart({
       .filter((sector) => sector.stocks.length > 0)
       .map((sector) => ({
         name: sector.displayName,
-        children: sector.stocks.map((stock) => ({
-          name: stock.ticker,
-          fullName: stock.name,
-          value: stock.marketCap, // Size của ô
-          changePercent: stock.changePercent,
-          price: stock.price,
-          change: stock.change,
-          sector: sector.displayName,
-        })),
-      }));
+        children: sector.stocks
+          .filter(stock =>
+            stock.marketCap > 0 &&
+            typeof stock.changePercent === 'number' &&
+            !isNaN(stock.changePercent) &&
+            typeof stock.price === 'number' &&
+            !isNaN(stock.price)
+          )
+          .map((stock) => ({
+            name: stock.ticker,
+            fullName: stock.name,
+            value: stock.marketCap, // Size của ô
+            changePercent: stock.changePercent,
+            price: stock.price,
+            change: stock.change,
+            sector: sector.displayName,
+          })),
+      }))
+      .filter(sector => sector.children.length > 0);
   }, [data]);
 
   // Custom content for each cell
   const CustomizedContent = (props: any) => {
-    const { x, y, width, height, name, fullName, changePercent, price, value } =
+    const { x, y, width, height, name, fullName, changePercent, price, value, depth } =
       props;
+
+    // Render parent cells (sectors) with background color to avoid black boxes
+    if (depth === 1) {
+      return (
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          style={{
+            fill: "#2a2d3a",
+            stroke: "#2a2d3a",
+            strokeWidth: 0,
+          }}
+        />
+      );
+    }
 
     // Guard against undefined values
     if (typeof changePercent === "undefined" || typeof price === "undefined") {
-      return null;
+      return (
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          style={{
+            fill: "#2a2d3a",
+            stroke: "#2a2d3a",
+            strokeWidth: 0,
+          }}
+        />
+      );
     }
 
-    // Không render nếu ô quá nhỏ
-    if (width < 40 || height < 40) return null;
-
     // Determine color based on change percentage
+    // Green = tăng, Yellow = không đổi, Orange = giảm nhẹ, Red = giảm nhiều
     const getColor = (change: number) => {
-      if (change > 2) return "#059669"; // Dark green
-      if (change > 0.5) return "#10b981"; // Green
-      if (change > 0) return "#34d399"; // Light green
-      if (change === 0) return "#fbbf24"; // Yellow
-      if (change > -0.5) return "#fca5a5"; // Light red
-      if (change > -2) return "#ef4444"; // Red
-      return "#dc2626"; // Dark red
+      if (change > 0) return "#10b981"; // Green - Tăng
+      if (change === 0) return "#fbbf24"; // Yellow - Không đổi
+      if (change > -2) return "#fb923c"; // Orange - Giảm nhẹ
+      return "#ef4444"; // Red - Giảm nhiều
     };
 
     const bgColor = getColor(changePercent);
-    const textColor = Math.abs(changePercent) > 1 ? "#ffffff" : "#000000";
+    const textColor = "#ffffff"; // Always white for better contrast
+
+    // Calculate font sizes based on cell size - tăng size lên để dễ đọc hơn
+    const tickerFontSize = width > 120 ? 16 : width > 80 ? 13 : width > 50 ? 10 : 8;
+    const percentFontSize = width > 120 ? 14 : width > 80 ? 11 : width > 50 ? 9 : 7;
+    const priceFontSize = width > 120 ? 11 : 9;
 
     return (
       <g>
@@ -79,47 +117,52 @@ export default function HeatmapChart({
           height={height}
           style={{
             fill: bgColor,
-            stroke: "#ffffff",
-            strokeWidth: 1,
+            stroke: "none",
+            strokeWidth: 0,
           }}
         />
         {/* Ticker Symbol */}
-        {width > 55 && height > 50 && (
+        {width > 40 && height > 40 && (
           <text
             x={x + width / 2}
-            y={y + height / 2 - 3}
+            y={y + height / 2 - (height > 60 ? 5 : 2)}
             textAnchor="middle"
             fill={textColor}
-            fontSize={width > 100 ? 8 : 6}
-            fontWeight="bold"
+            stroke="none"
+            fontSize={tickerFontSize}
+            fontWeight="700"
           >
             {name}
           </text>
         )}
         {/* Change Percentage */}
-        {width > 55 && height > 50 && (
+        {width > 40 && height > 40 && (
           <text
             x={x + width / 2}
-            y={y + height / 2 + 5}
+            y={y + height / 2 + (height > 60 ? 10 : 8)}
             textAnchor="middle"
             fill={textColor}
-            fontSize={width > 100 ? 7 : 5}
+            stroke="none"
+            fontSize={percentFontSize}
+            fontWeight="600"
           >
             {changePercent > 0 ? "+" : ""}
             {changePercent?.toFixed(2) ?? "0.00"}%
           </text>
         )}
         {/* Price (if large enough) */}
-        {width > 110 && height > 75 && (
+        {width > 100 && height > 70 && (
           <text
             x={x + width / 2}
-            y={y + height / 2 + 18}
+            y={y + height / 2 + 22}
             textAnchor="middle"
             fill={textColor}
-            fontSize={8}
-            opacity={0.7}
+            stroke="none"
+            fontSize={priceFontSize}
+            fontWeight="500"
+            opacity={0.9}
           >
-            ${price?.toFixed(2) ?? "0.00"}
+            {price?.toFixed(2) ?? "0.00"}
           </text>
         )}
       </g>
@@ -134,30 +177,30 @@ export default function HeatmapChart({
     const isPositive = data.changePercent >= 0;
 
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className="bg-[#2a2d3a] border border-gray-700 rounded-lg shadow-xl p-3">
         <div className="space-y-1">
           <div>
-            <p className="font-bold text-sm">{data.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="font-bold text-sm text-gray-100">{data.name}</p>
+            <p className="text-xs text-gray-400">
               {data.fullName}
             </p>
           </div>
           <div className="pt-2 space-y-1 text-xs">
             <div className="flex justify-between gap-3">
-              <span className="text-gray-600 dark:text-gray-400">Sector:</span>
-              <span className="font-medium">{data.sector}</span>
+              <span className="text-gray-400">Ngành:</span>
+              <span className="font-medium text-gray-200">{data.sector}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-600 dark:text-gray-400">Price:</span>
-              <span className="font-semibold">
-                ${data.price?.toFixed(2) ?? "0.00"}
+              <span className="text-gray-400">Giá:</span>
+              <span className="font-semibold text-gray-100">
+                {data.price?.toFixed(2) ?? "0.00"} VNĐ
               </span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-600 dark:text-gray-400">Change:</span>
+              <span className="text-gray-400">Thay đổi:</span>
               <span
                 className={`font-semibold ${
-                  isPositive ? "text-green-600" : "text-red-600"
+                  isPositive ? "text-green-500" : "text-red-500"
                 }`}
               >
                 {isPositive ? "+" : ""}
@@ -166,10 +209,10 @@ export default function HeatmapChart({
               </span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-600 dark:text-gray-400">
-                Market Cap:
+              <span className="text-gray-400">
+                Vốn hóa:
               </span>
-              <span className="font-medium">{formatMarketCap(data.value)}</span>
+              <span className="font-medium text-gray-200">{formatMarketCap(data.value)}</span>
             </div>
           </div>
         </div>
@@ -194,11 +237,11 @@ export default function HeatmapChart({
         <Treemap
           data={treemapData}
           dataKey="value"
-          stroke="#fff"
-          fill="#8884d8"
+          stroke="#2a2d3a"
+          fill="#2a2d3a"
           content={<CustomizedContent />}
           isAnimationActive={false}
-          aspectRatio={1}
+          aspectRatio={4 / 3}
         >
           <Tooltip content={<CustomTooltip />} />
         </Treemap>
@@ -207,24 +250,20 @@ export default function HeatmapChart({
       {/* Legend */}
       <div className="mt-2 flex items-center justify-center gap-4 text-xs">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-600 rounded"></div>
-          <span className="text-gray-600 dark:text-gray-400">&gt;2% Tăng</span>
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></div>
+          <span className="text-gray-300">Tăng</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-400 rounded"></div>
-          <span className="text-gray-600 dark:text-gray-400">0-2% Tăng</span>
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#fbbf24' }}></div>
+          <span className="text-gray-300">Không đổi</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-yellow-400 rounded"></div>
-          <span className="text-gray-600 dark:text-gray-400">Không đổi</span>
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#fb923c' }}></div>
+          <span className="text-gray-300">Giảm nhẹ</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-red-400 rounded"></div>
-          <span className="text-gray-600 dark:text-gray-400">0-2% Giảm</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-red-600 rounded"></div>
-          <span className="text-gray-600 dark:text-gray-400">&gt;2% Giảm</span>
+          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+          <span className="text-gray-300">Giảm nhiều</span>
         </div>
       </div>
     </div>

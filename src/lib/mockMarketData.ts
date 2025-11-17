@@ -75,8 +75,8 @@ function generateSparkline(
 export function generateMockCandles(
   ticker: string,
   timeframe: TimeframeType,
-  count: number,
-  basePrice: number = 150
+  count: number = getDefaultCandleCount(timeframe),
+  basePrice: number = 1650 // VNINDEX base price
 ): CandleBar[] {
   const candles: CandleBar[] = [];
   const now = new Date();
@@ -121,244 +121,135 @@ export function generateMockCandles(
 }
 
 function getIntervalMs(timeframe: TimeframeType): number {
+  // NOTE: Timeframe format:
+  // - "1d" = 1 ngày (day)
+  // - "1m" = 1 tháng (month), NOT 1 minute
+  // - "3m" = 3 tháng, "6m" = 6 tháng
+  // - "1y" = 1 năm (year)
   const intervals: Record<TimeframeType, number> = {
-    "1m": 60 * 1000,
-    "5m": 5 * 60 * 1000,
-    "15m": 15 * 60 * 1000,
-    "30m": 30 * 60 * 1000,
-    "1h": 60 * 60 * 1000,
-    "1D": 24 * 60 * 60 * 1000,
+    "1m": 24 * 60 * 60 * 1000, // Daily candles for 1 MONTH view
+    "5m": 5 * 60 * 1000, // 5 minute candles (for intraday)
+    "15m": 15 * 60 * 1000, // 15 minute candles (for intraday)
+    "30m": 30 * 60 * 1000, // 30 minute candles (for intraday)
+    "1h": 60 * 60 * 1000, // 1 hour candles (for intraday)
+    "1D": 60 * 60 * 1000, // 1 hour candles for 1 DAY view
+    "3m": 24 * 60 * 60 * 1000, // Daily candles for 3 MONTHS view
+    "6m": 24 * 60 * 60 * 1000, // Daily candles for 6 MONTHS view
+    "1y": 24 * 60 * 60 * 1000, // Daily candles for 1 YEAR view
+    "3y": 7 * 24 * 60 * 60 * 1000, // Weekly candles for 3 YEARS view
+    "5y": 7 * 24 * 60 * 60 * 1000, // Weekly candles for 5 YEARS view
   };
   return intervals[timeframe];
+}
+
+function getDefaultCandleCount(timeframe: TimeframeType): number {
+  // NOTE: Timeframe format:
+  // - "1d" = 1 ngày, "1m" = 1 tháng (month), "1y" = 1 năm
+  const counts: Record<TimeframeType, number> = {
+    "1m": 30, // 30 daily candles = 1 MONTH
+    "5m": 78, // 6.5 hours of trading (5-minute candles)
+    "15m": 26, // 6.5 hours (15-minute candles)
+    "30m": 13, // 6.5 hours (30-minute candles)
+    "1h": 24, // 24 hours (1-hour candles)
+    "1D": 24, // 24 x 1-hour candles = 1 DAY
+    "3m": 90, // 90 daily candles = 3 MONTHS
+    "6m": 180, // 180 daily candles = 6 MONTHS
+    "1y": 252, // 252 daily candles = 1 YEAR (trading days)
+    "3y": 156, // 156 weekly candles = 3 YEARS
+    "5y": 260, // 260 weekly candles = 5 YEARS
+  };
+  return counts[timeframe];
 }
 
 // ==========================================
 // MOCK HEATMAP DATA
 // ==========================================
 
-const US_SECTORS = [
-  { sector: "Technology", displayName: "Công nghệ", color: "#3b82f6" },
+const VN_SECTORS = [
   { sector: "Financials", displayName: "Tài chính", color: "#10b981" },
-  { sector: "Healthcare", displayName: "Y tế", color: "#ef4444" },
-  { sector: "Consumer", displayName: "Tiêu dùng", color: "#f59e0b" },
-  { sector: "Energy", displayName: "Năng lượng", color: "#8b5cf6" },
+  { sector: "RealEstate", displayName: "Bất động sản", color: "#f97316" },
   { sector: "Industrials", displayName: "Công nghiệp", color: "#ec4899" },
-  { sector: "Materials", displayName: "Nguyên liệu", color: "#14b8a6" },
-  { sector: "Real Estate", displayName: "Bất động sản", color: "#f97316" },
+  { sector: "Materials", displayName: "Vật liệu cơ bản", color: "#14b8a6" },
+  { sector: "ConsumerGoods", displayName: "Hàng tiêu dùng", color: "#f59e0b" },
+  { sector: "Energy", displayName: "Năng lượng", color: "#8b5cf6" },
+  { sector: "Utilities", displayName: "Các dịch vụ hạ tầng", color: "#6366f1" },
+  { sector: "Technology", displayName: "Công nghệ", color: "#3b82f6" },
 ];
 
 const SAMPLE_STOCKS = [
-  // Technology
-  {
-    ticker: "AAPL",
-    name: "Apple Inc.",
-    sector: "Technology",
-    basePrice: 189.5,
-    marketCap: 3000,
-  },
-  {
-    ticker: "MSFT",
-    name: "Microsoft",
-    sector: "Technology",
-    basePrice: 378.9,
-    marketCap: 2800,
-  },
-  {
-    ticker: "GOOGL",
-    name: "Alphabet",
-    sector: "Technology",
-    basePrice: 141.8,
-    marketCap: 1800,
-  },
-  {
-    ticker: "NVDA",
-    name: "NVIDIA",
-    sector: "Technology",
-    basePrice: 495.2,
-    marketCap: 1200,
-  },
-  {
-    ticker: "META",
-    name: "Meta Platforms",
-    sector: "Technology",
-    basePrice: 330.5,
-    marketCap: 850,
-  },
-  {
-    ticker: "TSLA",
-    name: "Tesla",
-    sector: "Technology",
-    basePrice: 242.8,
-    marketCap: 770,
-  },
+  // Financials - Tài chính (Top 10 stocks)
+  { ticker: "SHB", name: "NH SHB", sector: "Financials", basePrice: 12.5, marketCap: 800 },
+  { ticker: "VPB", name: "VPBank", sector: "Financials", basePrice: 23.8, marketCap: 750 },
+  { ticker: "VCI", name: "CTCK VCI", sector: "Financials", basePrice: 34.2, marketCap: 650 },
+  { ticker: "STB", name: "Sacombank", sector: "Financials", basePrice: 28.5, marketCap: 620 },
+  { ticker: "TCB", name: "Techcombank", sector: "Financials", basePrice: 45.7, marketCap: 580 },
+  { ticker: "SSI", name: "CTCK SSI", sector: "Financials", basePrice: 42.8, marketCap: 550 },
+  { ticker: "CTG", name: "VietinBank", sector: "Financials", basePrice: 35.6, marketCap: 500 },
+  { ticker: "TPB", name: "TPBank", sector: "Financials", basePrice: 27.3, marketCap: 480 },
+  { ticker: "VIB", name: "VIB", sector: "Financials", basePrice: 22.1, marketCap: 450 },
+  { ticker: "ACB", name: "ACB", sector: "Financials", basePrice: 31.4, marketCap: 420 },
+  { ticker: "VND", name: "VNDirect", sector: "Financials", basePrice: 19.2, marketCap: 380 },
+  { ticker: "HDB", name: "HDBank", sector: "Financials", basePrice: 25.6, marketCap: 350 },
 
-  // Financials
-  {
-    ticker: "JPM",
-    name: "JPMorgan Chase",
-    sector: "Financials",
-    basePrice: 152.3,
-    marketCap: 450,
-  },
-  {
-    ticker: "BAC",
-    name: "Bank of America",
-    sector: "Financials",
-    basePrice: 34.2,
-    marketCap: 280,
-  },
-  {
-    ticker: "WFC",
-    name: "Wells Fargo",
-    sector: "Financials",
-    basePrice: 48.5,
-    marketCap: 180,
-  },
-  {
-    ticker: "GS",
-    name: "Goldman Sachs",
-    sector: "Financials",
-    basePrice: 385.7,
-    marketCap: 130,
-  },
+  // Real Estate - Bất động sản (Top 8)
+  { ticker: "NVL", name: "Novaland", sector: "RealEstate", basePrice: 8.2, marketCap: 520 },
+  { ticker: "VIX", name: "VIX", sector: "RealEstate", basePrice: 15.4, marketCap: 400 },
+  { ticker: "MBB", name: "MB", sector: "RealEstate", basePrice: 24.6, marketCap: 380 },
+  { ticker: "PDR", name: "Phát Đạt", sector: "RealEstate", basePrice: 16.7, marketCap: 340 },
+  { ticker: "DIG", name: "DIC Corp", sector: "RealEstate", basePrice: 11.3, marketCap: 310 },
+  { ticker: "DXG", name: "Đất Xanh", sector: "RealEstate", basePrice: 13.8, marketCap: 290 },
+  { ticker: "KHG", name: "Khang Điền", sector: "RealEstate", basePrice: 19.5, marketCap: 260 },
+  { ticker: "HDC", name: "Hà Đô", sector: "RealEstate", basePrice: 22.4, marketCap: 240 },
+  { ticker: "TCH", name: "Tân Cảng", sector: "RealEstate", basePrice: 28.9, marketCap: 220 },
+  { ticker: "SCR", name: "SC Real", sector: "RealEstate", basePrice: 7.6, marketCap: 180 },
 
-  // Healthcare
-  {
-    ticker: "UNH",
-    name: "UnitedHealth",
-    sector: "Healthcare",
-    basePrice: 528.3,
-    marketCap: 500,
-  },
-  {
-    ticker: "JNJ",
-    name: "Johnson & Johnson",
-    sector: "Healthcare",
-    basePrice: 156.8,
-    marketCap: 380,
-  },
-  {
-    ticker: "PFE",
-    name: "Pfizer",
-    sector: "Healthcare",
-    basePrice: 28.4,
-    marketCap: 160,
-  },
-  {
-    ticker: "ABBV",
-    name: "AbbVie",
-    sector: "Healthcare",
-    basePrice: 175.9,
-    marketCap: 310,
-  },
+  // Industrials - Công nghiệp (Top 6)
+  { ticker: "CII", name: "HĐTC Hạ tầng", sector: "Industrials", basePrice: 6.3, marketCap: 450 },
+  { ticker: "VSC", name: "Container VN", sector: "Industrials", basePrice: 4.8, marketCap: 320 },
+  { ticker: "GEX", name: "Gelex", sector: "Industrials", basePrice: 25.1, marketCap: 280 },
+  { ticker: "HHV", name: "HHV", sector: "Industrials", basePrice: 18.4, marketCap: 250 },
+  { ticker: "HAH", name: "Hang Hải", sector: "Industrials", basePrice: 9.2, marketCap: 180 },
+  { ticker: "LCG", name: "LICOGI", sector: "Industrials", basePrice: 12.8, marketCap: 160 },
 
-  // Consumer
-  {
-    ticker: "AMZN",
-    name: "Amazon",
-    sector: "Consumer",
-    basePrice: 145.7,
-    marketCap: 1500,
-  },
-  {
-    ticker: "WMT",
-    name: "Walmart",
-    sector: "Consumer",
-    basePrice: 167.3,
-    marketCap: 450,
-  },
-  {
-    ticker: "HD",
-    name: "Home Depot",
-    sector: "Consumer",
-    basePrice: 345.2,
-    marketCap: 350,
-  },
-  {
-    ticker: "MCD",
-    name: "McDonald's",
-    sector: "Consumer",
-    basePrice: 293.8,
-    marketCap: 210,
-  },
+  // Materials - Vật liệu cơ bản (Top 6)
+  { ticker: "HPG", name: "Hòa Phát", sector: "Materials", basePrice: 32.5, marketCap: 900 },
+  { ticker: "HAG", name: "HAGL", sector: "Materials", basePrice: 8.7, marketCap: 420 },
+  { ticker: "NKG", name: "NAM KIM", sector: "Materials", basePrice: 15.3, marketCap: 280 },
+  { ticker: "GVR", name: "Cao su VN", sector: "Materials", basePrice: 21.6, marketCap: 250 },
+  { ticker: "HSG", name: "Hoa Sen", sector: "Materials", basePrice: 19.4, marketCap: 220 },
+  { ticker: "DCM", name: "Phân bón DCM", sector: "Materials", basePrice: 17.8, marketCap: 180 },
 
-  // Energy
-  {
-    ticker: "XOM",
-    name: "Exxon Mobil",
-    sector: "Energy",
-    basePrice: 112.5,
-    marketCap: 480,
-  },
-  {
-    ticker: "CVX",
-    name: "Chevron",
-    sector: "Energy",
-    basePrice: 158.3,
-    marketCap: 310,
-  },
-  {
-    ticker: "COP",
-    name: "ConocoPhillips",
-    sector: "Energy",
-    basePrice: 118.7,
-    marketCap: 140,
-  },
+  // Consumer Goods - Hàng tiêu dùng (Top 8)
+  { ticker: "MSN", name: "Masan", sector: "ConsumerGoods", basePrice: 89.5, marketCap: 1200 },
+  { ticker: "VNM", name: "Vinamilk", sector: "ConsumerGoods", basePrice: 67.2, marketCap: 850 },
+  { ticker: "VHC", name: "Vinhomes", sector: "ConsumerGoods", basePrice: 54.8, marketCap: 780 },
+  { ticker: "SAB", name: "Sabeco", sector: "ConsumerGoods", basePrice: 78.3, marketCap: 720 },
+  { ticker: "MWG", name: "MobileWorld", sector: "ConsumerGoods", basePrice: 52.6, marketCap: 650 },
+  { ticker: "PNJ", name: "Phú Nhuận", sector: "ConsumerGoods", basePrice: 91.4, marketCap: 420 },
+  { ticker: "FRT", name: "FPT Retail", sector: "ConsumerGoods", basePrice: 38.9, marketCap: 380 },
+  { ticker: "DGW", name: "Digiworld", sector: "ConsumerGoods", basePrice: 45.7, marketCap: 280 },
 
-  // Industrials
-  {
-    ticker: "BA",
-    name: "Boeing",
-    sector: "Industrials",
-    basePrice: 175.4,
-    marketCap: 110,
-  },
-  {
-    ticker: "CAT",
-    name: "Caterpillar",
-    sector: "Industrials",
-    basePrice: 345.8,
-    marketCap: 180,
-  },
-  {
-    ticker: "GE",
-    name: "General Electric",
-    sector: "Industrials",
-    basePrice: 125.3,
-    marketCap: 140,
-  },
+  // Energy - Năng lượng (Top 5)
+  { ticker: "PVD", name: "PV Drilling", sector: "Energy", basePrice: 12.8, marketCap: 450 },
+  { ticker: "BSR", name: "BSR", sector: "Energy", basePrice: 18.3, marketCap: 380 },
+  { ticker: "PVS", name: "PV Service", sector: "Energy", basePrice: 24.6, marketCap: 320 },
+  { ticker: "PVC", name: "PV Contr.", sector: "Energy", basePrice: 15.7, marketCap: 220 },
+  { ticker: "PVT", name: "PV Trans", sector: "Energy", basePrice: 9.4, marketCap: 180 },
 
-  // Materials
-  {
-    ticker: "LIN",
-    name: "Linde",
-    sector: "Materials",
-    basePrice: 425.6,
-    marketCap: 210,
-  },
-  {
-    ticker: "APD",
-    name: "Air Products",
-    sector: "Materials",
-    basePrice: 278.4,
-    marketCap: 62,
-  },
+  // Utilities - Dịch vụ hạ tầng (Top 5)
+  { ticker: "REE", name: "REE Corp", sector: "Utilities", basePrice: 46.8, marketCap: 450 },
+  { ticker: "POW", name: "POW", sector: "Utilities", basePrice: 14.2, marketCap: 520 },
+  { ticker: "NT2", name: "Nhiệt Điện", sector: "Utilities", basePrice: 28.5, marketCap: 380 },
+  { ticker: "PC1", name: "PC1", sector: "Utilities", basePrice: 22.3, marketCap: 280 },
+  { ticker: "GAS", name: "PV Gas", sector: "Utilities", basePrice: 85.6, marketCap: 360 },
 
-  // Real Estate
-  {
-    ticker: "PLD",
-    name: "Prologis",
-    sector: "Real Estate",
-    basePrice: 128.5,
-    marketCap: 120,
-  },
-  {
-    ticker: "AMT",
-    name: "American Tower",
-    sector: "Real Estate",
-    basePrice: 198.7,
-    marketCap: 90,
-  },
+  // Technology - Công nghệ (Top 6)
+  { ticker: "FPT", name: "FPT", sector: "Technology", basePrice: 112.5, marketCap: 980 },
+  { ticker: "CMG", name: "CMC", sector: "Technology", basePrice: 45.8, marketCap: 320 },
+  { ticker: "VGI", name: "VGI", sector: "Technology", basePrice: 18.6, marketCap: 180 },
+  { ticker: "ELC", name: "Elcom", sector: "Technology", basePrice: 24.3, marketCap: 150 },
+  { ticker: "ITD", name: "ITD", sector: "Technology", basePrice: 12.4, marketCap: 120 },
+  { ticker: "SAM", name: "Saigon ACE", sector: "Technology", basePrice: 16.8, marketCap: 95 },
 ];
 
 export function generateMockHeatmap(): HeatmapData {
@@ -377,7 +268,12 @@ export function generateMockHeatmap(): HeatmapData {
       marketCap: stock.marketCap * 1_000_000_000, // Billions to actual value
       volume: Math.floor(Math.random() * 50000000) + 1000000,
     };
-  });
+  }).filter(stock =>
+    stock.price > 0 &&
+    !isNaN(stock.price) &&
+    !isNaN(stock.changePercent) &&
+    stock.marketCap > 0
+  );
 
   // Group by sector
   const sectorMap = new Map<string, StockHeatmapItem[]>();
@@ -388,7 +284,7 @@ export function generateMockHeatmap(): HeatmapData {
     sectorMap.get(stock.sector)!.push(stock);
   });
 
-  const sectors: SectorGroup[] = US_SECTORS.map((sectorInfo) => {
+  const sectors: SectorGroup[] = VN_SECTORS.map((sectorInfo) => {
     const sectorStocks = sectorMap.get(sectorInfo.sector) || [];
     const totalMarketCap = sectorStocks.reduce(
       (sum, s) => sum + s.marketCap,

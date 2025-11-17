@@ -69,25 +69,22 @@ export default function HeatmapPanel() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden h-[600px] flex flex-col">
+    <div className="bg-[#2a2d3a] border border-gray-700 rounded-lg overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+      <div className="border-b border-gray-700 px-3 py-2">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-sm font-semibold text-gray-100">
               Biểu đồ nhiệt thị trường
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-[10px] text-gray-400">
               Kích thước: Vốn hóa | Màu sắc: % Thay đổi
             </p>
           </div>
           {heatmapData && !isLoading && (
             <div className="text-right">
-              <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                {heatmapData.totalStocks}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                stocks
+              <div className="text-xs font-semibold text-gray-100">
+                {heatmapData.totalStocks} stocks
               </div>
             </div>
           )}
@@ -95,12 +92,12 @@ export default function HeatmapPanel() {
       </div>
 
       {/* Heatmap Area */}
-      <div className="flex-1 p-4 overflow-hidden">
+      <div className="flex-1 p-2 overflow-hidden">
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center">
-              <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+              <p className="text-sm text-gray-400">
                 Loading heatmap...
               </p>
             </div>
@@ -108,7 +105,7 @@ export default function HeatmapPanel() {
         ) : heatmapData ? (
           <HeatmapChart data={heatmapData} height={480} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
+          <div className="w-full h-full flex items-center justify-center text-gray-500">
             <p className="text-sm">No heatmap data available</p>
           </div>
         )}
@@ -116,7 +113,7 @@ export default function HeatmapPanel() {
 
       {/* Footer - Sector Summary */}
       {heatmapData && !isLoading && (
-        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2 bg-gray-50 dark:bg-gray-900">
+        <div className="border-t border-gray-700 px-4 py-2 bg-[#1f2229]">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-3 overflow-x-auto">
               {heatmapData.sectors.slice(0, 4).map((sector) => (
@@ -124,12 +121,12 @@ export default function HeatmapPanel() {
                   key={sector.sector}
                   className="flex items-center gap-1 whitespace-nowrap"
                 >
-                  <span className="text-gray-600 dark:text-gray-400">
+                  <span className="text-gray-400">
                     {sector.displayName}:
                   </span>
                   <span
                     className={`font-semibold ${
-                      sector.avgChange >= 0 ? "text-green-600" : "text-red-600"
+                      sector.avgChange >= 0 ? "text-green-500" : "text-red-500"
                     }`}
                   >
                     {sector.avgChange >= 0 ? "+" : ""}
@@ -138,7 +135,7 @@ export default function HeatmapPanel() {
                 </div>
               ))}
             </div>
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-gray-500">
               {new Date(heatmapData.lastUpdate).toLocaleTimeString()}
             </span>
           </div>

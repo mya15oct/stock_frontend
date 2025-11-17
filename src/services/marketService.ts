@@ -53,8 +53,8 @@ export const marketService = {
    * Get candlestick bars for a ticker
    *
    * @param ticker - Stock ticker (e.g., "SPY")
-   * @param timeframe - Timeframe (1m, 5m, 15m, 1h, 1D)
-   * @param limit - Number of bars to fetch (default: 390 = 1 trading day at 1m)
+   * @param timeframe - Timeframe: "1d" = 1 ngày, "1m" = 1 tháng (month), "3m" = 3 tháng, "6m" = 6 tháng, "1y" = 1 năm
+   * @param limit - Number of bars to fetch (optional, auto-determined by timeframe)
    *
    * TODO: Backend endpoint
    * GET /api/market/candles/{ticker}?timeframe=1m&limit=390
@@ -65,7 +65,7 @@ export const marketService = {
   async getCandles(
     ticker: string,
     timeframe: TimeframeType = "1m",
-    limit: number = 390
+    limit?: number
   ): Promise<CandlestickDataset> {
     // MOCK DATA - Comment lại khi có backend
     const mockCandles =
@@ -80,6 +80,8 @@ export const marketService = {
           ? 387.23
           : ticker === "DIA"
           ? 350.15
+          : ticker === "VNINDEX"
+          ? 1650
           : 212.56;
 
       const bars = generateMockCandles(ticker, timeframe, limit, basePrice);
@@ -93,10 +95,12 @@ export const marketService = {
       });
     }
 
+    const actualLimit = limit || mockCandles.length;
+
     return Promise.resolve({
       ticker,
       timeframe,
-      bars: mockCandles.slice(-limit), // Last N bars
+      bars: mockCandles.slice(-actualLimit), // Last N bars
       isLive: false,
       lastUpdate: new Date().toISOString(),
     });

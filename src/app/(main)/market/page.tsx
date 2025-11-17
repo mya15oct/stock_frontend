@@ -22,6 +22,7 @@ import {
   CandlestickPanel,
   MarketStatusPanel,
   HeatmapPanel,
+  MarketIndexList,
 } from "@/components/market";
 import FeaturedNewsPanel from "@/components/market/FeaturedNewsPanel";
 
@@ -46,27 +47,27 @@ export default function MarketOverviewPage() {
 
         {/* 3 Column Layout: (Candlestick + Indices) | (MarketStatus + Heatmap) | News */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">
-          {/* LEFT COLUMN: Candlestick + Indices Below (35% = 4/12) */}
-          <div className="lg:col-span-4 flex flex-col gap-2 overflow-hidden">
-            {/* Candlestick Chart - Reduced height */}
-            <div className="flex-1 min-h-0">
+          {/* LEFT COLUMN: Candlestick + Market Indices (35% = 4/12) */}
+          <div className="lg:col-span-4 flex flex-col gap-3 overflow-hidden">
+            {/* Candlestick Chart - 65% height */}
+            <div className="flex-[0.65] min-h-0">
               <CandlestickPanel initialTicker={selectedIndex} />
             </div>
 
-            {/* Market Indices - Fixed height */}
-            <div className="h-[280px]">
-              <IndexHeader onIndexSelect={setSelectedIndex} />
+            {/* Market Indices List - 35% height */}
+            <div className="flex-[0.35] min-h-0 overflow-y-auto">
+              <MarketIndexList />
             </div>
           </div>
 
           {/* CENTER COLUMN: Market Status + Heatmap (50% = 6/12) */}
-          <div className="lg:col-span-6 flex flex-col overflow-hidden">
-            {/* Market Status - 55% height */}
-            <div className="h-[55%] mb-2">
+          <div className="lg:col-span-6 flex flex-col overflow-hidden gap-1">
+            {/* Market Status - 45% height */}
+            <div className="h-[45%]">
               <MarketStatusPanel />
             </div>
 
-            {/* Heatmap - 45% height */}
+            {/* Heatmap - 55% height */}
             <div className="flex-1 min-h-0">
               <HeatmapPanel />
             </div>

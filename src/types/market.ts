@@ -36,7 +36,13 @@ export interface CandleBar {
   tradeCount?: number;
 }
 
-export type TimeframeType = "1m" | "5m" | "15m" | "30m" | "1h" | "1D";
+// IMPORTANT: Timeframe format convention
+// - "1d" = 1 ngày (day)
+// - "1m" = 1 tháng (month), NOT 1 minute!
+// - "3m" = 3 tháng, "6m" = 6 tháng
+// - "1y" = 1 năm (year), "3y" = 3 năm, "5y" = 5 năm
+// - For intraday: "5m" = 5 phút, "15m" = 15 phút, "30m" = 30 phút, "1h" = 1 giờ
+export type TimeframeType = "1m" | "5m" | "15m" | "30m" | "1h" | "1D" | "3m" | "6m" | "1y" | "3y" | "5y";
 
 export interface CandlestickDataset {
   ticker: string;
@@ -114,16 +120,25 @@ export interface FeaturedNews {
   publishedAt: string; // ISO date string
   category: "market" | "economy" | "stock" | "commodity" | "crypto";
   url?: string;
+  // Stock-related fields
+  ticker?: string;
+  change?: number;
+  changePercent?: number;
+  // For news with multiple tickers
+  ticker2?: string;
+  change2?: number;
+  changePercent2?: number;
+  // Reactions
+  reactions?: {
+    likes: number;
+    dislikes: number;
+  };
 }
 
 // ==========================================
 // TAB TYPES (Market Status Tabs)
 // ==========================================
-export type MarketStatusTab =
-  | "movement"
-  | "foreign"
-  | "proprietary"
-  | "liquidity";
+export type MarketStatusTab = "movement" | "index_impact";
 
 export interface TabData {
   label: string;
