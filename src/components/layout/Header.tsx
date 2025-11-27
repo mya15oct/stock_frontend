@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useStealthMode } from "@/contexts/StealthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { toolsNav, type NavLink } from "@/config/navigation";
+import { mainNav, toolsNav, type NavLink } from "@/config/navigation";
 
 export default function Header() {
   const { isStealthMode, toggleStealthMode } = useStealthMode();
@@ -17,6 +17,16 @@ export default function Header() {
             SNOWBALL
           </Link>
           <div className="hidden md:flex items-center space-x-6">
+            {mainNav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-1"
+              >
+                {item.icon && <span>{item.icon}</span>}
+                {item.label}
+              </Link>
+            ))}
             <div className="relative group">
               <button className="text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors flex items-center gap-1">
                 Tools
