@@ -20,6 +20,9 @@ export default function StockCard({ stock }: StockCardProps) {
             <h3 className="font-semibold text-lg">{stock.ticker}</h3>
             <p className="text-gray-600 text-sm">{stock.name}</p>
             <p className="text-gray-500 text-xs">{stock.sector}</p>
+            {stock.industry && (
+              <p className="text-gray-400 text-xs italic">{stock.industry}</p>
+            )}
           </div>
           <div className="text-right">
             <p className="font-semibold text-lg">{formatPrice(stock.price)}</p>

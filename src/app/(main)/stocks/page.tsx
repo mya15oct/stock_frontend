@@ -11,6 +11,7 @@ import { stockService } from "@/services/stockService";
 export default function StocksPage() {
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [filteredStocks, setFilteredStocks] = useState<Stock[]>([]);
+  const [availableSectors, setAvailableSectors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -22,14 +23,45 @@ export default function StocksPage() {
     const fetchStocks = async () => {
       try {
         const stocksData = await stockService.getStocks();
-        setStocks(stocksData);
+        
+        // Fetch price for each stock
+        const stocksWithPrices = await Promise.all(
+          stocksData.map(async (stock) => {
+            try {
+              const detailStock = await stockService.getStock(stock.ticker);
+              return { ...stock, price: detailStock.price };
+            } catch {
+              return stock; // Keep original if fetch fails
+            }
+          })
+        );
+        
+        setStocks(stocksWithPrices);
 
-        let filtered = stocksData;
+        // Extract unique sectors from data (normalize to title case)
+        const sectors = Array.from(
+          new Set(
+            stocksWithPrices
+              .map((s) => s.sector)
+              .filter((s) => s && s !== "Unknown")
+              .map((s) => s.toLowerCase()) // Normalize to lowercase first
+          )
+        )
+          .sort()
+          .map((s) => 
+            // Convert to title case for display
+            s.split(' ').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            ).join(' ')
+          );
+        setAvailableSectors(sectors);
+
+        let filtered = stocksWithPrices;
 
         if (sector) {
           filtered = filtered.filter(
-            (stock: Stock) =>
-              stock.sector.toLowerCase() === sector.toLowerCase()
+            (stock: Stock) => 
+              stock.sector?.toLowerCase() === sector.toLowerCase()
           );
         }
 
@@ -115,21 +147,14 @@ export default function StocksPage() {
         >
           All Sectors
         </button>
-        {[
-          "Technology",
-          "Healthcare",
-          "Financial Services",
-          "Consumer Goods",
-          "Automotive",
-          "E-commerce",
-        ].map((sectorName) => (
+        {availableSectors.map((sectorName) => (
           <button
             key={sectorName}
             onClick={() =>
-              (window.location.href = `/stocks?sector=${sectorName.toLowerCase()}`)
+              (window.location.href = `/stocks?sector=${encodeURIComponent(sectorName)}`)
             }
             className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-              sector === sectorName.toLowerCase()
+              sector === sectorName
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
