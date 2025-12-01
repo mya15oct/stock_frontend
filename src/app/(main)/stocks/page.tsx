@@ -122,12 +122,12 @@ export default function StocksPage() {
     : "All Stocks";
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gray-50 -mx-4 px-4 py-3 border-b border-gray-200">
+    <div className="space-y-6 px-4 md:px-6 lg:px-8">
+      <div className="bg-gray-50 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-3 border-b border-gray-200">
         <Breadcrumb customItems={getBreadcrumbItems()} />
       </div>
 
-      <div>
+      <div className="pt-2">
         <h1 className="text-3xl font-bold mb-2">{pageTitle}</h1>
         <p className="text-gray-600">
           {filteredStocks.length} stock{filteredStocks.length !== 1 ? "s" : ""}{" "}
@@ -136,7 +136,7 @@ export default function StocksPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => (window.location.href = "/stocks")}
           className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
