@@ -7,7 +7,6 @@ interface BreadcrumbItem {
 }
 
 interface BreadcrumbProps {
-  country?: string;
   sector?: string;
   companyName?: string;
   ticker?: string;
@@ -15,7 +14,6 @@ interface BreadcrumbProps {
 }
 
 export default function Breadcrumb({
-  country = "United States",
   sector,
   companyName,
   ticker,
@@ -29,16 +27,9 @@ export default function Breadcrumb({
     const items: BreadcrumbItem[] = [
       {
         label: "Stocks",
-        href: "/",
+        href: "/stocks",
       },
     ];
-
-    if (country) {
-      items.push({
-        label: country,
-        href: `/stocks?country=${encodeURIComponent(country.toLowerCase())}`,
-      });
-    }
 
     if (sector) {
       items.push({

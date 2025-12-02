@@ -12,6 +12,7 @@ export default function StocksPage() {
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [filteredStocks, setFilteredStocks] = useState<Stock[]>([]);
   const [availableSectors, setAvailableSectors] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -77,6 +78,31 @@ export default function StocksPage() {
     fetchStocks();
   }, [sector]);
 
+  // Apply search filter
+  useEffect(() => {
+    let filtered = [...stocks];
+
+    // Filter by sector if selected
+    if (sector) {
+      filtered = filtered.filter(
+        (stock: Stock) => 
+          stock.sector?.toLowerCase() === sector.toLowerCase()
+      );
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(
+        (stock: Stock) =>
+          stock.ticker?.toLowerCase().includes(query) ||
+          stock.name?.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredStocks(filtered);
+  }, [sector, searchQuery, stocks]);
+
   const getBreadcrumbItems = (): BreadcrumbItem[] => {
     const items: BreadcrumbItem[] = [{ label: "Stocks", href: "/stocks" }];
 
@@ -136,7 +162,10 @@ export default function StocksPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Search and Filter Section */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        {/* Sector Filter */}
+        <div className="flex flex-wrap gap-2">
         <button
           onClick={() => (window.location.href = "/stocks")}
           className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
@@ -162,6 +191,43 @@ export default function StocksPage() {
             {sectorName}
           </button>
         ))}
+        </div>
+
+        {/* Search Bar */}
+        <div className="w-full lg:w-96">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by ticker or company name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-3 pl-10 pr-10 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white dark:border-gray-600"
+            />
+            <svg
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {filteredStocks.length > 0 ? (
