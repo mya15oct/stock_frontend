@@ -24,8 +24,8 @@ export default function StockHeader({
   const isImageLogo = isLogoImage(displayLogo);
 
   // Use real price change data from database, fallback to defaults if not available
-  const priceChange = stock.priceChange ?? 0;
-  const priceChangePercent = stock.priceChangePercent ?? 0;
+  const priceChange = stock.change ?? stock.priceChange ?? 0;
+  const priceChangePercent = stock.changePercent ?? stock.priceChangePercent ?? 0;
   const isPositive = priceChange >= 0;
 
   return (
@@ -117,26 +117,26 @@ export default function StockHeader({
           <div className="grid grid-cols-5 gap-6 text-sm">
             {/* Earnings Date */}
             <Tooltip
-              content="The next date on which the company will report its financial results"
+              content="The latest quarter for which earnings data is available"
               position="bottom"
             >
               <div>
                 <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs">Earnings date</div>
                 <div className="font-medium text-gray-900 dark:text-white text-sm">
-                  —
+                  {isStealthMode ? "••••" : stock.latestQuarter ? new Date(stock.latestQuarter).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "—"}
                 </div>
               </div>
             </Tooltip>
 
             {/* P/E Ratio */}
             <Tooltip
-              content="The price-to-earnings ratio. A measure of how expensive a stock is relative to its earnings"
+              content="The ratio of a company's share price to the company's earnings per share"
               position="bottom"
             >
               <div>
                 <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs">P/E</div>
                 <div className="font-medium text-gray-900 dark:text-white text-sm">
-                  {isStealthMode ? "••••" : "—"}
+                  {isStealthMode ? "••••" : stock.pe ? stock.pe.toFixed(2) : "—"}
                 </div>
               </div>
             </Tooltip>
@@ -149,7 +149,7 @@ export default function StockHeader({
               <div>
                 <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs">EPS</div>
                 <div className="font-medium text-gray-900 dark:text-white text-sm">
-                  {isStealthMode ? "••••" : "—"}
+                  {isStealthMode ? "••••" : stock.eps ? `$${stock.eps.toFixed(2)}` : "—"}
                 </div>
               </div>
             </Tooltip>
@@ -162,7 +162,7 @@ export default function StockHeader({
               <div>
                 <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs">Market cap</div>
                 <div className="font-medium text-gray-900 dark:text-white text-sm">
-                  {isStealthMode ? "••••" : "—"}
+                  {isStealthMode ? "••••" : stock.marketCap ? `$${(stock.marketCap / 1e12).toFixed(2)}T` : "—"}
                 </div>
               </div>
             </Tooltip>
@@ -175,7 +175,7 @@ export default function StockHeader({
               <div>
                 <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs">Dividend yield</div>
                 <div className="font-medium text-gray-900 dark:text-white text-sm">
-                  {isStealthMode ? "••••" : "—"}
+                  {isStealthMode ? "••••" : stock.dividendYield ? `${stock.dividendYield}%` : "—"}
                 </div>
               </div>
             </Tooltip>
