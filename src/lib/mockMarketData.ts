@@ -257,6 +257,9 @@ export function generateMockHeatmap(): HeatmapData {
     const changePercent = (Math.random() - 0.45) * 6; // -2.7% to 3.3%
     const change = stock.basePrice * (changePercent / 100);
     const price = stock.basePrice + change;
+    const volume = Math.floor(Math.random() * 50000000) + 1000000;
+    const rawSize = volume || Math.abs(changePercent) * 100;
+    const size = Math.max(rawSize, 1);
 
     return {
       ticker: stock.ticker,
@@ -265,14 +268,16 @@ export function generateMockHeatmap(): HeatmapData {
       price: Number(price.toFixed(2)),
       change: Number(change.toFixed(2)),
       changePercent: Number(changePercent.toFixed(2)),
-      marketCap: stock.marketCap * 1_000_000_000, // Billions to actual value
-      volume: Math.floor(Math.random() * 50000000) + 1000000,
+      // Legacy mock market cap kept for optional tooltip display only
+      marketCap: stock.marketCap * 1_000_000_000,
+      volume,
+      size,
     };
   }).filter(stock =>
     stock.price > 0 &&
     !isNaN(stock.price) &&
     !isNaN(stock.changePercent) &&
-    stock.marketCap > 0
+    stock.size >= 1
   );
 
   // Group by sector
@@ -286,10 +291,7 @@ export function generateMockHeatmap(): HeatmapData {
 
   const sectors: SectorGroup[] = VN_SECTORS.map((sectorInfo) => {
     const sectorStocks = sectorMap.get(sectorInfo.sector) || [];
-    const totalMarketCap = sectorStocks.reduce(
-      (sum, s) => sum + s.marketCap,
-      0
-    );
+    const totalMarketCap = sectorStocks.reduce((sum, s) => sum + (s.size ?? 0), 0);
     const avgChange =
       sectorStocks.length > 0
         ? sectorStocks.reduce((sum, s) => sum + s.changePercent, 0) /

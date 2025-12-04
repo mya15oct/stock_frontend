@@ -2,71 +2,18 @@
  * Heatmap Panel Component
  *
  * Panel bên phải hiển thị heatmap của tất cả stocks
- * Grouped by sector, colored by % change, sized by market cap
- *
- * TODO: WebSocket realtime price updates
+ * Grouped by sector, colored by % change, sized by synthetic `size` field
+ * (volume / biến động), không còn phụ thuộc vào marketCap cho kích thước.
  */
 
 "use client";
 
-import React, { useState, useEffect } from "react";
-import type { HeatmapData } from "@/types/market";
-import { marketService } from "@/services/marketService";
+import React from "react";
 import HeatmapChart from "@/components/charts/HeatmapChart";
+import { useRealtimeHeatmap } from "@/hooks/useRealtimeHeatmap";
 
 export default function HeatmapPanel() {
-  const [heatmapData, setHeatmapData] = useState<HeatmapData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    loadHeatmap();
-
-    // Auto-refresh every 10 seconds (fallback khi chưa có WebSocket)
-    const interval = setInterval(() => {
-      loadHeatmap();
-    }, 10000);
-
-    return () => clearInterval(interval);
-
-    // TODO: Replace with WebSocket
-    // const ws = new HeatmapWebSocket((updates) => {
-    //   // Batch update prices
-    //   setHeatmapData((prev) => {
-    //     if (!prev) return prev;
-    //
-    //     const sectors = prev.sectors.map((sector) => ({
-    //       ...sector,
-    //       stocks: sector.stocks.map((stock) => {
-    //         const update = updates.find((u) => u.ticker === stock.ticker);
-    //         if (update) {
-    //           return {
-    //             ...stock,
-    //             price: update.price,
-    //             change: update.change,
-    //             changePercent: update.changePercent,
-    //           };
-    //         }
-    //         return stock;
-    //       }),
-    //     }));
-    //
-    //     return { ...prev, sectors, lastUpdate: new Date().toISOString() };
-    //   });
-    // });
-    // ws.connect();
-    // return () => ws.disconnect();
-  }, []);
-
-  async function loadHeatmap() {
-    try {
-      const data = await marketService.getHeatmap();
-      setHeatmapData(data);
-    } catch (error) {
-      console.error("Failed to load heatmap:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const { data: heatmapData, isLoading, error } = useRealtimeHeatmap();
 
   return (
     <div className="bg-white dark:bg-[#2a2d3a] border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden h-full flex flex-col">
@@ -78,7 +25,7 @@ export default function HeatmapPanel() {
               Biểu đồ nhiệt thị trường
             </h3>
             <p className="text-[10px] text-gray-600 dark:text-gray-400">
-              Kích thước: Vốn hóa | Màu sắc: % Thay đổi
+              Kích thước: Size (volume/biến động) | Màu sắc: % Thay đổi
             </p>
           </div>
           {heatmapData && !isLoading && (
@@ -91,8 +38,8 @@ export default function HeatmapPanel() {
         </div>
       </div>
 
-      {/* Heatmap Area */}
-      <div className="flex-1 p-2 overflow-hidden">
+      {/* Heatmap Area - Increased size with FireAnt-style container */}
+      <div className="flex-1 p-4 overflow-hidden flex items-center justify-center">
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center">
@@ -102,8 +49,26 @@ export default function HeatmapPanel() {
               </p>
             </div>
           </div>
+        ) : error ? (
+          <div className="w-full h-full flex items-center justify-center text-red-500 dark:text-red-400">
+            <div className="text-center">
+              <p className="text-sm font-semibold mb-1">Failed to load heatmap</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{error}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                Retrying automatically...
+              </p>
+            </div>
+          </div>
         ) : heatmapData ? (
-          <HeatmapChart data={heatmapData} height={480} />
+          <div
+            className="w-full h-full max-h-[550px] min-h-[450px] rounded-md border border-white/8 dark:border-white/8 p-3 bg-transparent"
+            style={{
+              borderRadius: "6px",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+            }}
+          >
+            <HeatmapChart data={heatmapData} height={520} />
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-500">
             <p className="text-sm">No heatmap data available</p>

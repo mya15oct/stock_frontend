@@ -2,7 +2,7 @@
  * Market Heatmap Component (Treemap)
  *
  * Hiển thị tất cả stocks grouped by sector
- * - Size: Market Cap
+ * - Size: marketCap-driven synthetic `size` field
  * - Color: % Change (red = giảm, green = tăng)
  *
  * TODO: Add WebSocket realtime price updates
@@ -13,6 +13,7 @@
 import React, { useMemo } from "react";
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts";
 import type { HeatmapData, StockHeatmapItem } from "@/types/market";
+import { getColorFromChangePercent } from "@/utils/colorUtils";
 
 export interface HeatmapChartProps {
   data: HeatmapData | null;
@@ -32,24 +33,27 @@ export default function HeatmapChart({
       .map((sector) => ({
         name: sector.displayName,
         children: sector.stocks
-          .filter(stock =>
-            stock.marketCap > 0 &&
-            typeof stock.changePercent === 'number' &&
-            !isNaN(stock.changePercent) &&
-            typeof stock.price === 'number' &&
-            !isNaN(stock.price)
+          .filter(
+            (stock) =>
+              (stock.size ?? 0) > 0 &&
+              typeof stock.changePercent === "number" &&
+              !isNaN(stock.changePercent) &&
+              typeof stock.price === "number" &&
+              !isNaN(stock.price)
           )
           .map((stock) => ({
             name: stock.ticker,
             fullName: stock.name,
-            value: stock.marketCap, // Size của ô
+            size: stock.size ?? 1, // Treemap cell size
+            marketCap: stock.marketCap, // Optional legacy display value
             changePercent: stock.changePercent,
             price: stock.price,
             change: stock.change,
-            sector: sector.displayName,
+            sector: sector.sector,
+            volume: stock.volume,
           })),
       }))
-      .filter(sector => sector.children.length > 0);
+      .filter((sector) => sector.children.length > 0);
   }, [data]);
 
   // Custom content for each cell
@@ -57,20 +61,86 @@ export default function HeatmapChart({
     const { x, y, width, height, name, fullName, changePercent, price, value, depth } =
       props;
 
-    // Render parent cells (sectors) with background color to avoid black boxes
+    // Render parent cells (sectors) with FireAnt-style title bar overlay
+    // This renders at depth === 1, which is the sector level in the hierarchical Treemap
     if (depth === 1) {
+      // Sector container styling
+      const sectorBgColor = "#1a1d28"; // Darker background for sector containers
+      const sectorBorderColor = "#4b5563"; // Visible border color (gray-600)
+      const sectorBorderWidth = 2; // Visible border width
+
+      // FireAnt-style title bar styling
+      // Title bar appears at top-left of sector block, does not overlap stock tiles
+      const titleBarBg = "rgba(0, 0, 0, 0.35)"; // Dark translucent background
+      const titleBarPaddingX = 6; // Horizontal padding
+      const titleBarPaddingY = 3; // Vertical padding
+      const titleBarFontSize = 11; // Font size as specified
+      const titleBarFontWeight = 600; // Font weight as specified
+      const titleBarBorderRadius = 3; // Border radius as specified
+      const titleBarTextColor = "#ffffff"; // White text for contrast
+      const titleBarOffsetX = 4; // Offset from left edge of sector
+      const titleBarOffsetY = 4; // Offset from top edge of sector
+
+      // Calculate title bar dimensions based on text
+      // Approximate text width: font-size * character-count * 0.6 (average character width factor)
+      const estimatedTextWidth = name.length * titleBarFontSize * 0.6;
+      const titleBarWidth = estimatedTextWidth + titleBarPaddingX * 2;
+      const titleBarHeight = titleBarFontSize + titleBarPaddingY * 2;
+
       return (
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          style={{
-            fill: "#2a2d3a",
-            stroke: "#2a2d3a",
-            strokeWidth: 0,
-          }}
-        />
+        <g>
+          {/* Sector background with border - this is the container for all stock tiles */}
+          <rect
+            x={x}
+            y={y}
+            width={width}
+            height={height}
+            style={{
+              fill: sectorBgColor,
+              stroke: sectorBorderColor,
+              strokeWidth: sectorBorderWidth,
+              strokeDasharray: "0", // Solid border
+            }}
+            rx={2} // Slight rounded corners
+            ry={2}
+          />
+          {/* FireAnt-style sector title bar overlay at top-left */}
+          {/* This overlay sits on top of the sector container but does not interfere with stock tiles */}
+          {/* pointer-events: none ensures it doesn't block tooltips or interactions */}
+          {name && width > 20 && height > 15 && (
+            <g>
+              {/* Title bar background - dark translucent rectangle */}
+              <rect
+                x={x + titleBarOffsetX}
+                y={y + titleBarOffsetY}
+                width={Math.min(titleBarWidth, width - titleBarOffsetX * 2)}
+                height={titleBarHeight}
+                rx={titleBarBorderRadius}
+                ry={titleBarBorderRadius}
+                style={{
+                  fill: titleBarBg,
+                  pointerEvents: "none", // Don't block interactions with stock tiles
+                }}
+              />
+              {/* Sector name text - white text on dark translucent background */}
+              {/* Y position calculated to center text vertically in title bar: offset + padding + font-size baseline offset */}
+              <text
+                x={x + titleBarOffsetX + titleBarPaddingX}
+                y={y + titleBarOffsetY + titleBarPaddingY + titleBarFontSize * 0.8}
+                textAnchor="start"
+                fill={titleBarTextColor}
+                fontSize={titleBarFontSize}
+                fontWeight={titleBarFontWeight}
+                style={{
+                  pointerEvents: "none", // Don't block interactions
+                  userSelect: "none", // Prevent text selection
+                }}
+              >
+                {name}
+              </text>
+            </g>
+          )}
+        </g>
       );
     }
 
@@ -91,16 +161,7 @@ export default function HeatmapChart({
       );
     }
 
-    // Determine color based on change percentage
-    // Green = tăng, Yellow = không đổi, Orange = giảm nhẹ, Red = giảm nhiều
-    const getColor = (change: number) => {
-      if (change > 0) return "#10b981"; // Green - Tăng
-      if (change === 0) return "#fbbf24"; // Yellow - Không đổi
-      if (change > -2) return "#fb923c"; // Orange - Giảm nhẹ
-      return "#ef4444"; // Red - Giảm nhiều
-    };
-
-    const bgColor = getColor(changePercent);
+    const bgColor = getColorFromChangePercent(changePercent);
     const textColor = "#ffffff"; // Always white for better contrast
 
     // Calculate font sizes based on cell size - tăng size lên để dễ đọc hơn
@@ -108,59 +169,79 @@ export default function HeatmapChart({
     const percentFontSize = width > 120 ? 14 : width > 80 ? 11 : width > 50 ? 9 : 7;
     const priceFontSize = width > 120 ? 11 : 9;
 
+    // Add visual padding/gap between stock tiles within sectors
+    // This creates a subtle gap effect by slightly reducing the rendered size
+    const padding = 1; // 1px visual gap between tiles
+    const adjustedX = x + padding / 2;
+    const adjustedY = y + padding / 2;
+    const adjustedWidth = width - padding;
+    const adjustedHeight = height - padding;
+
     return (
       <g>
+        {/* Stock tile with subtle border to separate from sector background */}
         <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
+          x={adjustedX}
+          y={adjustedY}
+          width={adjustedWidth}
+          height={adjustedHeight}
           style={{
             fill: bgColor,
-            stroke: "none",
-            strokeWidth: 0,
+            stroke: "rgba(0, 0, 0, 0.1)", // Subtle border for tile separation
+            strokeWidth: 0.5,
           }}
+          rx={1} // Slight rounded corners for modern look
+          ry={1}
         />
         {/* Ticker Symbol */}
-        {width > 40 && height > 40 && (
+        {adjustedWidth > 40 && adjustedHeight > 40 && (
           <text
-            x={x + width / 2}
-            y={y + height / 2 - (height > 60 ? 5 : 2)}
+            x={adjustedX + adjustedWidth / 2}
+            y={adjustedY + adjustedHeight / 2 - (adjustedHeight > 60 ? 5 : 2)}
             textAnchor="middle"
             fill={textColor}
             stroke="none"
             fontSize={tickerFontSize}
             fontWeight="700"
+            style={{
+              textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)", // Text shadow for readability
+            }}
           >
             {name}
           </text>
         )}
         {/* Change Percentage */}
-        {width > 40 && height > 40 && (
+        {adjustedWidth > 40 && adjustedHeight > 40 && (
           <text
-            x={x + width / 2}
-            y={y + height / 2 + (height > 60 ? 10 : 8)}
+            x={adjustedX + adjustedWidth / 2}
+            y={adjustedY + adjustedHeight / 2 + (adjustedHeight > 60 ? 10 : 8)}
             textAnchor="middle"
             fill={textColor}
             stroke="none"
             fontSize={percentFontSize}
             fontWeight="600"
+            style={{
+              textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)",
+            }}
           >
             {changePercent > 0 ? "+" : ""}
             {changePercent?.toFixed(2) ?? "0.00"}%
           </text>
         )}
         {/* Price (if large enough) */}
-        {width > 100 && height > 70 && (
+        {adjustedWidth > 100 && adjustedHeight > 70 && (
           <text
-            x={x + width / 2}
-            y={y + height / 2 + 22}
+            x={adjustedX + adjustedWidth / 2}
+            y={adjustedY + adjustedHeight / 2 + 22}
             textAnchor="middle"
             fill={textColor}
             stroke="none"
             fontSize={priceFontSize}
             fontWeight="500"
             opacity={0.9}
+            style={{
+              textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)",
+            }}
           >
             {price?.toFixed(2) ?? "0.00"}
           </text>
@@ -193,26 +274,41 @@ export default function HeatmapChart({
             <div className="flex justify-between gap-3">
               <span className="text-gray-400">Giá:</span>
               <span className="font-semibold text-gray-100">
-                {data.price?.toFixed(2) ?? "0.00"} VNĐ
+                {data.price?.toFixed(2) ?? "0.00"}
               </span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-400">Thay đổi:</span>
+              <span className="text-gray-400">% Thay đổi:</span>
               <span
                 className={`font-semibold ${
                   isPositive ? "text-green-500" : "text-red-500"
                 }`}
               >
                 {isPositive ? "+" : ""}
-                {data.change?.toFixed(2) ?? "0.00"} ({isPositive ? "+" : ""}
-                {data.changePercent?.toFixed(2) ?? "0.00"}%)
+                {data.changePercent?.toFixed(2) ?? "0.00"}%
               </span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-400">
-                Vốn hóa:
+              <span className="text-gray-400">Khối lượng:</span>
+              <span className="font-medium text-gray-200">
+                {Number.isFinite(data.volume)
+                  ? data.volume.toLocaleString()
+                  : "0"}
               </span>
-              <span className="font-medium text-gray-200">{formatMarketCap(data.value)}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-gray-400">Vốn hóa:</span>
+              <span className="font-medium text-gray-200">
+                {typeof data.marketCap === "number" && data.marketCap > 0
+                  ? formatMarketCap(data.marketCap)
+                  : "N/A"}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-gray-400">Size (debug):</span>
+              <span className="font-medium text-gray-200">
+                {Number.isFinite(data.size) ? data.size.toFixed(0) : "1"}
+              </span>
             </div>
           </div>
         </div>
@@ -232,13 +328,20 @@ export default function HeatmapChart({
   }
 
   return (
-    <div className="w-full" style={{ height }}>
+    <div 
+      className="w-full h-full" 
+      style={{ 
+        height,
+        // Ensure Treemap background matches panel background (transparent/dark)
+        backgroundColor: "transparent",
+      }}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <Treemap
           data={treemapData}
-          dataKey="value"
-          stroke="#2a2d3a"
-          fill="#2a2d3a"
+          dataKey="size"
+          stroke="#1a1d28" // Match sector background for cleaner look
+          fill="transparent" // Transparent to inherit panel background
           content={<CustomizedContent />}
           isAnimationActive={false}
           aspectRatio={4 / 3}

@@ -12,7 +12,8 @@
     "next": "14.0.0",
     "react": "^18",
     "react-dom": "^18",
-    "recharts": "^2.8.0"
+    "recharts": "^2.8.0",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -26,4 +27,3 @@
     "typescript": "^5"
   }
 }
-

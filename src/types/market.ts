@@ -64,8 +64,19 @@ export interface StockHeatmapItem {
   price: number;
   change: number; // Absolute change
   changePercent: number; // Percentage change
-  marketCap: number; // For size calculation
   volume: number;
+  /**
+   * Sizing field for treemap cells.
+   * - Primary: marketCap when available.
+   * - Fallback: volume or |changePercent| * 100.
+   * Always >= 1 to avoid invisible cells.
+   */
+  size: number;
+  /**
+   * Optional market cap (kept for display/tooltips and sizing when available).
+   * When provided and > 0, this is the primary driver for `size`.
+   */
+  marketCap?: number;
 }
 
 export interface SectorGroup {
