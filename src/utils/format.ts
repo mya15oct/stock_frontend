@@ -72,6 +72,27 @@ export function formatFinancialNumber(value: number | undefined): string {
 }
 
 /**
+ * Format money flow values in compact USD notation (e.g., $1.2B, $345.6M)
+ * Used for money flow charts and displays
+ */
+export function formatMoneyFlow(value: number): string {
+  if (value === 0) return "$0";
+  const absValue = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+
+  if (absValue >= 1_000_000_000) {
+    return `${sign}$${(absValue / 1_000_000_000).toFixed(1)}B`;
+  }
+  if (absValue >= 1_000_000) {
+    return `${sign}$${(absValue / 1_000_000).toFixed(1)}M`;
+  }
+  if (absValue >= 1_000) {
+    return `${sign}$${(absValue / 1_000).toFixed(1)}K`;
+  }
+  return `${sign}$${absValue.toFixed(1)}`;
+}
+
+/**
  * Determine the best scale for chart Y-axis based on data range
  * Returns the divisor and label (e.g., [1e9, "Billions"] or [1e6, "Millions"])
  */

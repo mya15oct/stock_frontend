@@ -25,3 +25,44 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+/* Smooth page transitions */
+@layer utilities {
+  .page-transition {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Prevent layout shift during navigation */
+  main {
+    min-height: 100vh;
+  }
+  
+  /* Hide scrollbar for market page only */
+  main.market-page-no-scrollbar {
+    overflow: hidden !important;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+  }
+  
+  main.market-page-no-scrollbar::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+    width: 0 !important;
+    height: 0 !important;
+  }
+}

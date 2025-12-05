@@ -6,6 +6,8 @@ import { useRealtimeContext } from "@/contexts/RealtimeContext";
 import { fetchMarketStocks } from "@/services/marketMetadataService";
 import { fetchPreviousClosesBatch } from "@/services/marketPreviousCloseService";
 import { fetchAccumulatedVolumes } from "@/services/marketVolumeService";
+import { fetchLatestEodBatch } from "@/services/marketEodService";
+import { isMarketOpen } from "@/utils/marketHours";
 import { computeSize, ensureStockSize } from "@/utils/sizeUtils";
 import { retryWithBackoff } from "@/utils/retry";
 
@@ -220,6 +222,79 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
 
         // Fetch previousClose trong background và update sau (không block UI)
         const symbols = stocks.map((s) => s.symbol);
+        
+        // ✅ Check market hours: nếu market đóng, fetch latest EOD data thay vì chờ realtime
+        const marketOpen = isMarketOpen();
+        if (!marketOpen) {
+          // Market đóng → fetch latest EOD data của phiên vừa kết thúc
+          if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
+            console.log("[useRealtimeHeatmap] Market is closed, fetching latest EOD data...");
+          }
+          
+          fetchLatestEodBatch(symbols)
+            .then((eodData) => {
+              if (!isMounted) return;
+              
+              if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.log(`[useRealtimeHeatmap] ✅ Fetched latest EOD data for ${Object.keys(eodData).length} symbols`);
+              }
+              
+              // Update data với EOD values
+              setData((prev) => {
+                if (!prev) return prev;
+                
+                const updatedSectors: SectorGroup[] = prev.sectors.map((sector) => {
+                  const updatedStocks: StockHeatmapItem[] = sector.stocks.map((stock) => {
+                    const symbol = stock.ticker.toUpperCase();
+                    const eod = eodData[symbol];
+                    
+                    if (eod) {
+                      return {
+                        ...stock,
+                        price: eod.price,
+                        change: eod.price - eod.previousClose,
+                        changePercent: eod.changePercent,
+                        volume: eod.volume,
+                        previousClose: eod.previousClose,
+                        size: computeSize({
+                          marketCap: stock.marketCap,
+                          volume: eod.volume,
+                          changePercent: eod.changePercent,
+                        }),
+                      };
+                    }
+                    return stock;
+                  });
+                  
+                  const avgChange = updatedStocks.length > 0
+                    ? updatedStocks.reduce((sum, s) => sum + (s.changePercent ?? 0), 0) / updatedStocks.length
+                    : 0;
+                  
+                  return {
+                    ...sector,
+                    stocks: updatedStocks,
+                    avgChange,
+                  };
+                });
+                
+                return {
+                  ...prev,
+                  sectors: updatedSectors,
+                  lastUpdate: new Date().toISOString(),
+                };
+              });
+            })
+            .catch((err) => {
+              if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.warn("[useRealtimeHeatmap] Failed to fetch latest EOD data:", err);
+              }
+            });
+        }
+        
+        // Fetch previousClose để dùng cho realtime data (khi market mở)
         fetchPreviousClosesBatch(symbols)
           .then((previousCloses) => {
             if (!isMounted) return;

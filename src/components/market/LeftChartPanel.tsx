@@ -10,7 +10,7 @@
 
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   PieChart,
   Pie,
@@ -24,6 +24,8 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useRealtimeHeatmap } from "@/hooks/useRealtimeHeatmap";
+import { formatMoneyFlow } from "@/utils/format";
+
 
 // Colors aligned with heatmap palette (see utils/colorUtils.ts)
 const COLORS = {
@@ -42,6 +44,7 @@ interface LeftChartPanelProps {
 // Memoize component để tránh re-render không cần thiết
 const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftChartPanelProps) {
   const { data, isLoading, error } = heatmapData;
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const derivedStatus = useMemo(() => {
     if (!data || !data.sectors || !Array.isArray(data.sectors)) return null;
@@ -59,8 +62,8 @@ const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftC
 
     allStocks.forEach((stock) => {
       const cp = stock.changePercent ?? 0;
-      const // approximate cash flow = price * volume (scaled down to "tỷ" units)
-        cashFlow = (stock.price ?? 0) * (stock.volume ?? 0) / 1_000_000;
+      // approximate cash flow = price * volume (in USD, not scaled)
+      const cashFlow = (stock.price ?? 0) * (stock.volume ?? 0);
 
       if (cp > 0) {
         advancing += 1;
@@ -97,11 +100,29 @@ const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftC
     );
   }
 
-  // Prepare data for Pie Chart
+  // Calculate total for percentage calculation
+  const totalStocks = derivedStatus.advancing + derivedStatus.declining + derivedStatus.unchanged;
+
+  // Prepare data for Pie Chart with percentage
   const pieData = [
-    { name: "Advancing", value: derivedStatus.advancing, color: COLORS.advancing },
-    { name: "Declining", value: derivedStatus.declining, color: COLORS.declining },
-    { name: "Unchanged", value: derivedStatus.unchanged, color: COLORS.unchanged },
+    { 
+      name: "Advancing", 
+      value: derivedStatus.advancing, 
+      color: COLORS.advancing,
+      percentage: totalStocks > 0 ? (derivedStatus.advancing / totalStocks) * 100 : 0
+    },
+    { 
+      name: "Declining", 
+      value: derivedStatus.declining, 
+      color: COLORS.declining,
+      percentage: totalStocks > 0 ? (derivedStatus.declining / totalStocks) * 100 : 0
+    },
+    { 
+      name: "Unchanged", 
+      value: derivedStatus.unchanged, 
+      color: COLORS.unchanged,
+      percentage: totalStocks > 0 ? (derivedStatus.unchanged / totalStocks) * 100 : 0
+    },
   ];
 
   // Prepare data for Bar Chart (Cash Flow)
@@ -141,14 +162,63 @@ const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftC
           </h4>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart margin={{ top: 12, bottom: 12, left: 5, right: 14 }}>
+              {/* Gradient and filter definitions for 3D effect (only when hovered) */}
+              <defs>
+                {/* Radial gradient for each slice to create 3D depth when hovered */}
+                {pieData.map((entry, index) => {
+                  // Create gradient based on original color to maintain color consistency
+                  const baseColor = entry.color;
+                  // Create a slightly lighter version for highlight effect (center of gradient)
+                  // Convert hex to RGB, lighten it
+                  const hexToRgb = (hex: string) => {
+                    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                    return result ? {
+                      r: parseInt(result[1], 16),
+                      g: parseInt(result[2], 16),
+                      b: parseInt(result[3], 16)
+                    } : null;
+                  };
+                  const rgb = hexToRgb(baseColor);
+                  // Lighten color for center highlight (add 40 to each RGB component)
+                  const lighterColor = rgb 
+                    ? `rgb(${Math.min(255, rgb.r + 40)}, ${Math.min(255, rgb.g + 40)}, ${Math.min(255, rgb.b + 40)})`
+                    : baseColor;
+                  
+                  return (
+                    <radialGradient key={`gradient-${index}`} id={`pieGradient-${index}`} cx="30%" cy="30%">
+                      <stop offset="0%" stopColor={lighterColor} stopOpacity={1} />
+                      <stop offset="50%" stopColor={baseColor} stopOpacity={1} />
+                      <stop offset="100%" stopColor={baseColor} stopOpacity={1} />
+                    </radialGradient>
+                  );
+                })}
+                {/* Enhanced shadow filter for 3D depth (only when hovered) */}
+                <filter id="pieShadow3D" x="-100%" y="-100%" width="300%" height="300%">
+                  <feGaussianBlur in="SourceAlpha" stdDeviation="4" />
+                  <feOffset dx="3" dy="4" result="offsetblur" />
+                  <feComponentTransfer>
+                    <feFuncA type="linear" slope="0.4" />
+                  </feComponentTransfer>
+                  <feMerge>
+                    <feMergeNode />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
               <Pie
                 data={pieData}
                 cx="50%"
                 cy="50%"
                 innerRadius={8}
                 outerRadius={55}
-                paddingAngle={1}
+                paddingAngle={2}
                 dataKey="value"
+                isAnimationActive={true}
+                animationDuration={800}
+                animationEasing="ease-out"
+                activeIndex={hoveredIndex ?? undefined}
+                onMouseEnter={(_, index) => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
                 label={({
                   cx,
                   cy,
@@ -157,6 +227,7 @@ const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftC
                   outerRadius,
                   name,
                   value,
+                  payload,
                 }) => {
                   const RADIAN = Math.PI / 180;
                   const radius = outerRadius + 14;
@@ -170,6 +241,10 @@ const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftC
                       textAnchor={x > cx ? "start" : "end"}
                       dominantBaseline="central"
                       className="text-xs font-medium text-gray-700 dark:text-gray-300"
+                      style={{
+                        textShadow: "0 1px 2px rgba(0, 0, 0, 0.2)",
+                        filter: "drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1))",
+                      }}
                     >
                       {`${name} (${value})`}
                     </text>
@@ -178,13 +253,47 @@ const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftC
                 labelLine={{
                   stroke: "#94a3b8",
                   strokeWidth: 1,
+                  strokeOpacity: 0.6,
                 }}
               >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
+                {pieData.map((entry, index) => {
+                  const isHovered = hoveredIndex === index;
+                  return (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={isHovered ? `url(#pieGradient-${index})` : entry.color}
+                      style={{
+                        filter: isHovered
+                          ? "url(#pieShadow3D) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35))"
+                          : "none",
+                        transition: "all 0.3s ease-out",
+                        transform: isHovered ? "translateZ(0) scale(1.05)" : "translateZ(0)",
+                        cursor: "pointer",
+                      }}
+                    />
+                  );
+                })}
               </Pie>
-              <Tooltip />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(42, 45, 58, 0.95)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "6px",
+                  padding: "8px 10px",
+                  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
+                  fontSize: "12px",
+                }}
+                itemStyle={{
+                  color: "#fff",
+                  fontSize: "12px",
+                  padding: "2px 0",
+                }}
+                labelFormatter={() => ""}
+                formatter={(value: number, name: string, props: any) => {
+                  const percentage = props.payload?.percentage ?? 0;
+                  return `${name} : ${percentage.toFixed(2)}%`;
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -209,8 +318,8 @@ const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftC
                 width={0}
                 tick={false}
                 axisLine={false}
-                tickFormatter={(value) => `${value.toFixed(0)} tỷ`}
-                domain={[0, (dataMax: number) => Math.ceil(dataMax / 1000) * 1000]}
+                tickFormatter={(value) => formatMoneyFlow(value)}
+                domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
               />
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -219,12 +328,13 @@ const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftC
                 vertical
               />
               <Tooltip
-                formatter={(value: number) => `${value.toFixed(1)} tỷ`}
+                formatter={(value: number) => formatMoneyFlow(value)}
                 contentStyle={{
                   backgroundColor: "#fff",
                   border: "1px solid #e5e7eb",
                   borderRadius: "8px",
                   fontSize: "12px",
+                  padding: "8px",
                 }}
               />
               <Bar
@@ -232,7 +342,7 @@ const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftC
                 radius={[4, 4, 0, 0]}
                 label={{
                   position: "top",
-                  formatter: (value: number) => `${value.toFixed(1)} tỷ`,
+                  formatter: (value: number) => formatMoneyFlow(value),
                   fontSize: 11,
                   fontWeight: 600,
                   fill: "currentColor",

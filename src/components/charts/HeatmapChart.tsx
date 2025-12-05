@@ -10,7 +10,8 @@
 
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts";
 import type { HeatmapData, StockHeatmapItem } from "@/types/market";
 import { getColorFromChangePercent } from "@/utils/colorUtils";
@@ -24,6 +25,26 @@ const HeatmapChart = React.memo(function HeatmapChart({
   data,
   height = 600,
 }: HeatmapChartProps) {
+  const router = useRouter();
+  const [navigating, setNavigating] = useState<string | null>(null);
+
+  // Handle click on stock tile - navigate to overview tab
+  const handleStockClick = (ticker: string) => {
+    if (navigating) return; // Prevent multiple clicks
+    
+    setNavigating(ticker);
+    
+    // Smooth scroll to top before navigation
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    
+    // Small delay to allow scroll animation to start
+    setTimeout(() => {
+      router.push(`/stocks/${ticker.toUpperCase()}?tab=overview`);
+      // Reset navigating state after navigation
+      setTimeout(() => setNavigating(null), 300);
+    }, 100);
+  };
+
   // Transform data for Recharts Treemap
   // Stocks đã được sắp xếp theo volume (descending) trong useRealtimeHeatmap
   // Treemap sẽ tự động sắp xếp từ trái sang phải, trên xuống dưới theo size
@@ -75,6 +96,9 @@ const HeatmapChart = React.memo(function HeatmapChart({
       parent,
       index,
     } = props;
+    
+    // Only make stock tiles clickable (not sector headers)
+    const isStockTile = depth === 2;
 
     // Guard against undefined values
     if (typeof changePercent === "undefined" || typeof price === "undefined") {
@@ -111,8 +135,48 @@ const HeatmapChart = React.memo(function HeatmapChart({
     const adjustedWidth = width - padding;
     const adjustedHeight = height - padding;
 
+    const isNavigating = navigating === name;
+    
     return (
-      <g>
+      <g
+        onClick={() => isStockTile && handleStockClick(name)}
+        onMouseEnter={(e) => {
+          if (!isStockTile) return;
+          // Add hover effect
+          const target = e.currentTarget;
+          const rect = target.querySelector("rect:not([fill='transparent'])");
+          if (rect) {
+            (rect as HTMLElement).style.opacity = "0.85";
+            (rect as HTMLElement).style.cursor = "pointer";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isStockTile) return;
+          // Remove hover effect
+          const target = e.currentTarget;
+          const rect = target.querySelector("rect:not([fill='transparent'])");
+          if (rect) {
+            (rect as HTMLElement).style.opacity = "1";
+            (rect as HTMLElement).style.cursor = "default";
+          }
+        }}
+        style={{
+          cursor: isStockTile ? "pointer" : "default",
+          transition: "all 0.2s ease-out",
+        }}
+      >
+        {/* Invisible clickable overlay covering entire tile */}
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill="transparent"
+          style={{
+            cursor: isStockTile ? "pointer" : "default",
+            pointerEvents: isStockTile ? "all" : "none",
+          }}
+        />
         {/* Stock tile with subtle border to separate from sector background */}
         <rect
           x={adjustedX}
@@ -124,6 +188,8 @@ const HeatmapChart = React.memo(function HeatmapChart({
             stroke: "rgba(0, 0, 0, 0.1)", // Subtle border for tile separation
             strokeWidth: 0.5,
             transition: "all 0.3s ease-out", // Smooth transition for position/size changes
+            opacity: isNavigating ? 0.7 : 1,
+            transform: isNavigating ? "scale(0.98)" : "scale(1)",
           }}
           rx={1} // Slight rounded corners for modern look
           ry={1}
@@ -140,6 +206,7 @@ const HeatmapChart = React.memo(function HeatmapChart({
             fontWeight="700"
             style={{
               textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)", // Text shadow for readability
+              pointerEvents: "none", // Prevent text from blocking clicks
             }}
           >
             {name}
@@ -157,6 +224,7 @@ const HeatmapChart = React.memo(function HeatmapChart({
             fontWeight="600"
             style={{
               textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)",
+              pointerEvents: "none", // Prevent text from blocking clicks
             }}
           >
             {changePercent > 0 ? "+" : ""}
@@ -176,6 +244,7 @@ const HeatmapChart = React.memo(function HeatmapChart({
             opacity={0.9}
             style={{
               textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)",
+              pointerEvents: "none", // Prevent text from blocking clicks
             }}
           >
             {price?.toFixed(2) ?? "0.00"}

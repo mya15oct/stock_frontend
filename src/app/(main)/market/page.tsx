@@ -12,7 +12,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useRealtimeHeatmap } from "@/hooks/useRealtimeHeatmap";
 import { LeftChartPanel, HeatmapPanel } from "@/components/market";
 import FeaturedNewsPanel from "@/components/market/FeaturedNewsPanel";
@@ -22,8 +22,43 @@ export default function MarketOverviewPage() {
   // ✅ Step 1: Consolidate API Calls - Call useRealtimeHeatmap once at page level
   const heatmapData = useRealtimeHeatmap();
 
+  // Hide scrollbar for market page
+  useEffect(() => {
+    const mainElement = document.querySelector("main");
+    if (mainElement) {
+      mainElement.classList.add("market-page-no-scrollbar");
+      // Also set overflow hidden directly
+      mainElement.style.overflow = "hidden";
+      mainElement.style.scrollbarWidth = "none";
+      // @ts-ignore - msOverflowStyle is a valid CSS property for IE/Edge
+      mainElement.style.msOverflowStyle = "none";
+      
+      // Webkit scrollbar
+      const style = document.createElement("style");
+      style.textContent = `
+        main.market-page-no-scrollbar::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+      `;
+      document.head.appendChild(style);
+
+      return () => {
+        mainElement.classList.remove("market-page-no-scrollbar");
+        mainElement.style.overflow = "";
+        mainElement.style.scrollbarWidth = "";
+        // @ts-ignore
+        mainElement.style.msOverflowStyle = "";
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      };
+    }
+  }, []);
+
   return (
-    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden market-page-no-scrollbar">
       {/* ===================================
           MAIN CONTENT - Fit to viewport
           =================================== */}
@@ -58,7 +93,7 @@ export default function MarketOverviewPage() {
 
             {/* RIGHT COLUMN: News Feed (25%) - Internal scroll only */}
             <div className="h-full overflow-hidden">
-              <FeaturedNewsPanel />
+              <FeaturedNewsPanel heatmapData={heatmapData.data} />
             </div>
           </div>
 
@@ -71,7 +106,7 @@ export default function MarketOverviewPage() {
               <HeatmapPanel heatmapData={heatmapData} />
             </div>
             <div className="flex-shrink-0">
-              <FeaturedNewsPanel />
+              <FeaturedNewsPanel heatmapData={heatmapData.data} />
             </div>
           </div>
         </div>
