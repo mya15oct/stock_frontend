@@ -66,10 +66,17 @@ export interface StockHeatmapItem {
   changePercent: number; // Percentage change
   volume: number;
   /**
+   * Previous day's close price used as baseline for price change calculation.
+   * When present and > 0, change/changePercent should be derived from:
+   *  change = price - previousClose
+   *  changePercent = (change / previousClose) * 100
+   */
+  previousClose?: number;
+  /**
    * Sizing field for treemap cells.
-   * - Primary: marketCap when available.
-   * - Fallback: volume or |changePercent| * 100.
-   * Always >= 1 to avoid invisible cells.
+   * - Directly driven by trading volume (size ≈ volume, clamped to >= 1).
+   * - Higher volume ⇒ larger tile area.
+   * - Lower volume ⇒ smaller tile area, but never completely invisible.
    */
   size: number;
   /**

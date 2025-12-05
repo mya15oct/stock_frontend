@@ -11,9 +11,16 @@
 import React from "react";
 import HeatmapChart from "@/components/charts/HeatmapChart";
 import { useRealtimeHeatmap } from "@/hooks/useRealtimeHeatmap";
+import { useRealtimeContext } from "@/contexts/RealtimeContext";
+import type { HeatmapData } from "@/types/market";
 
-export default function HeatmapPanel() {
-  const { data: heatmapData, isLoading, error } = useRealtimeHeatmap();
+interface HeatmapPanelProps {
+  heatmapData: ReturnType<typeof useRealtimeHeatmap>;
+}
+
+const HeatmapPanel = React.memo(function HeatmapPanel({ heatmapData: heatmapDataProp }: HeatmapPanelProps) {
+  const { data: heatmapData, isLoading, error } = heatmapDataProp;
+  const { isConnected } = useRealtimeContext();
 
   return (
     <div className="bg-white dark:bg-[#2a2d3a] border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden h-full flex flex-col">
@@ -22,10 +29,10 @@ export default function HeatmapPanel() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              Biểu đồ nhiệt thị trường
+              Market Heatmap
             </h3>
             <p className="text-[10px] text-gray-600 dark:text-gray-400">
-              Kích thước: Size (volume/biến động) | Màu sắc: % Thay đổi
+              Size: Volume | Color: % Change vs previous close
             </p>
           </div>
           {heatmapData && !isLoading && (
@@ -47,6 +54,9 @@ export default function HeatmapPanel() {
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Loading heatmap...
               </p>
+              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                Fetching stock metadata...
+              </p>
             </div>
           </div>
         ) : error ? (
@@ -60,17 +70,40 @@ export default function HeatmapPanel() {
             </div>
           </div>
         ) : heatmapData ? (
-          <div
-            className="w-full h-full rounded-md border border-white/8 dark:border-white/8 p-2 bg-transparent"
-            style={{
-              borderRadius: "6px",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              minHeight: "520px",
-              maxHeight: "600px",
-            }}
-          >
-            <HeatmapChart data={heatmapData} height={undefined} />
-          </div>
+          // Chỉ hiển thị nếu có realtime data (có trades và connected)
+          (() => {
+            const hasRealtimeData = heatmapData.sectors.some((sector) =>
+              sector.stocks.some((stock) => stock.price > 0 || stock.volume > 0)
+            );
+            
+            if (!isConnected || !hasRealtimeData) {
+              return (
+                <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-500">
+                  <div className="text-center">
+                    <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <p className="text-sm">Waiting for realtime data...</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {!isConnected ? "Connecting to WebSocket..." : "Waiting for trade updates..."}
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            
+            return (
+              <div
+                className="w-full h-full rounded-md border border-white/8 dark:border-white/8 p-2 bg-transparent"
+                style={{
+                  borderRadius: "6px",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  minHeight: "520px",
+                  maxHeight: "600px",
+                }}
+              >
+                <HeatmapChart data={heatmapData} height={undefined} />
+              </div>
+            );
+          })()
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-500">
             <p className="text-sm">No heatmap data available</p>
@@ -110,4 +143,6 @@ export default function HeatmapPanel() {
       )}
     </div>
   );
-}
+});
+
+export default HeatmapPanel;

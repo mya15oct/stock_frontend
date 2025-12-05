@@ -10,7 +10,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo } from "react";
 import {
   PieChart,
   Pie,
@@ -23,42 +23,70 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import type { MarketStatus } from "@/types/market";
-import { marketService } from "@/services/marketService";
+import { useRealtimeHeatmap } from "@/hooks/useRealtimeHeatmap";
 
+// Colors aligned with heatmap palette (see utils/colorUtils.ts)
 const COLORS = {
-  advancing: "#10b981", // Green
-  declining: "#ef4444", // Red
-  unchanged: "#fbbf24", // Yellow
+  // Use the same strong green as heatmap tiles for gains
+  advancing: "#166F00",
+  // Moderate loss (-2 → -5%)
+  declining: "#F00000",
+  // Near-flat / neutral zone around 0
+  unchanged: "#FF661A",
 };
 
-export default function LeftChartPanel() {
-  const [status, setStatus] = useState<MarketStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface LeftChartPanelProps {
+  heatmapData: ReturnType<typeof useRealtimeHeatmap>;
+}
 
-  useEffect(() => {
-    loadStatus();
+// Memoize component để tránh re-render không cần thiết
+const LeftChartPanel = React.memo(function LeftChartPanel({ heatmapData }: LeftChartPanelProps) {
+  const { data, isLoading, error } = heatmapData;
 
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(() => {
-      loadStatus();
-    }, 30000);
+  const derivedStatus = useMemo(() => {
+    if (!data || !data.sectors || !Array.isArray(data.sectors)) return null;
 
-    return () => clearInterval(interval);
-  }, []);
+    const allStocks = data.sectors.flatMap((s) => s.stocks);
+    if (allStocks.length === 0) return null;
 
-  async function loadStatus() {
-    try {
-      const data = await marketService.getMarketStatus();
-      setStatus(data);
-    } catch (error) {
-      console.error("Failed to load market status:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+    let advancing = 0;
+    let declining = 0;
+    let unchanged = 0;
 
-  if (isLoading || !status) {
+    let flowAdvancing = 0;
+    let flowDeclining = 0;
+    let flowUnchanged = 0;
+
+    allStocks.forEach((stock) => {
+      const cp = stock.changePercent ?? 0;
+      const // approximate cash flow = price * volume (scaled down to "tỷ" units)
+        cashFlow = (stock.price ?? 0) * (stock.volume ?? 0) / 1_000_000;
+
+      if (cp > 0) {
+        advancing += 1;
+        flowAdvancing += cashFlow;
+      } else if (cp < 0) {
+        declining += 1;
+        flowDeclining += cashFlow;
+      } else {
+        unchanged += 1;
+        flowUnchanged += cashFlow;
+      }
+    });
+
+    return {
+      advancing,
+      declining,
+      unchanged,
+      cashFlow: {
+        advancing: flowAdvancing,
+        declining: flowDeclining,
+        unchanged: flowUnchanged,
+      },
+    };
+  }, [data]);
+
+  if (isLoading || !derivedStatus || error) {
     return (
       <div className="bg-white dark:bg-[#2a2d3a] border border-gray-200 dark:border-gray-700 rounded-lg p-4 h-full flex flex-col gap-4">
         <div className="animate-pulse space-y-4">
@@ -71,26 +99,26 @@ export default function LeftChartPanel() {
 
   // Prepare data for Pie Chart
   const pieData = [
-    { name: "Tăng", value: status.advancing, color: COLORS.advancing },
-    { name: "Giảm", value: status.declining, color: COLORS.declining },
-    { name: "Không đổi", value: status.unchanged, color: COLORS.unchanged },
+    { name: "Advancing", value: derivedStatus.advancing, color: COLORS.advancing },
+    { name: "Declining", value: derivedStatus.declining, color: COLORS.declining },
+    { name: "Unchanged", value: derivedStatus.unchanged, color: COLORS.unchanged },
   ];
 
   // Prepare data for Bar Chart (Cash Flow)
   const barData = [
     {
-      name: "Tăng",
-      value: status.cashFlow.advancing,
+      name: "Advancing",
+      value: derivedStatus.cashFlow.advancing,
       color: COLORS.advancing,
     },
     {
-      name: "Giảm",
-      value: status.cashFlow.declining,
+      name: "Declining",
+      value: derivedStatus.cashFlow.declining,
       color: COLORS.declining,
     },
     {
-      name: "Kh. đổi",
-      value: status.cashFlow.unchanged,
+      name: "Unchanged",
+      value: derivedStatus.cashFlow.unchanged,
       color: COLORS.unchanged,
     },
   ];
@@ -100,26 +128,26 @@ export default function LeftChartPanel() {
       {/* Header */}
       <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-2 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          Thống kê thị trường
+          Market Statistics
         </h3>
       </div>
 
       {/* Content - Vertical Stack */}
       <div className="flex-1 p-3 flex flex-col gap-3 overflow-hidden min-h-0">
-        {/* TOP: Pie Chart - Số lượng CP Tăng, Giảm, Không đổi */}
-        <div className="flex-shrink-0" style={{ height: "240px" }}>
+        {/* TOP: Pie Chart - Advancing / Declining / Unchanged counts */}
+        <div className="flex-shrink-0" style={{ height: "220px" }}>
           <h4 className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-300">
-            Số lượng CP Tăng, Giảm, Không đổi
+            Number of Advancing, Declining, Unchanged Stocks
           </h4>
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart margin={{ top: 12, bottom: 12, left: 5, right: 14 }}>
               <Pie
                 data={pieData}
                 cx="50%"
                 cy="50%"
-                innerRadius={0}
-                outerRadius={70}
-                paddingAngle={2}
+                innerRadius={8}
+                outerRadius={55}
+                paddingAngle={1}
                 dataKey="value"
                 label={({
                   cx,
@@ -131,7 +159,7 @@ export default function LeftChartPanel() {
                   value,
                 }) => {
                   const RADIAN = Math.PI / 180;
-                  const radius = outerRadius + 18;
+                  const radius = outerRadius + 14;
                   const x = cx + radius * Math.cos(-midAngle * RADIAN);
                   const y = cy + radius * Math.sin(-midAngle * RADIAN);
                   return (
@@ -164,12 +192,13 @@ export default function LeftChartPanel() {
         {/* BOTTOM: Bar Chart - Phân bổ dòng tiền */}
         <div className="flex-1 min-h-0" style={{ minHeight: "260px", maxHeight: "300px" }}>
           <h4 className="text-xs font-semibold mb-2 text-gray-700 dark:text-gray-300">
-            Phân bổ dòng tiền
+            Money Flow Distribution
           </h4>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={barData}
-              margin={{ top: 20, right: 10, left: 10, bottom: 5 }}
+              margin={{ top: 16, right: 16, left: 16, bottom: 8 }}
+              barCategoryGap="30%"
             >
               <XAxis
                 dataKey="name"
@@ -177,8 +206,9 @@ export default function LeftChartPanel() {
                 stroke="#94a3b8"
               />
               <YAxis
-                tick={{ fontSize: 10 }}
-                stroke="#94a3b8"
+                width={0}
+                tick={false}
+                axisLine={false}
                 tickFormatter={(value) => `${value.toFixed(0)} tỷ`}
                 domain={[0, (dataMax: number) => Math.ceil(dataMax / 1000) * 1000]}
               />
@@ -186,7 +216,7 @@ export default function LeftChartPanel() {
                 strokeDasharray="3 3"
                 stroke="#374151"
                 strokeWidth={0.5}
-                vertical={false}
+                vertical
               />
               <Tooltip
                 formatter={(value: number) => `${value.toFixed(1)} tỷ`}
@@ -218,5 +248,9 @@ export default function LeftChartPanel() {
       </div>
     </div>
   );
-}
+});
+
+export default LeftChartPanel;
+
+
 

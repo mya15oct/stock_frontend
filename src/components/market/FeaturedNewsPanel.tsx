@@ -82,12 +82,12 @@ const MOCK_NEWS: FeaturedNews[] = [
 ];
 
 /**
- * FeaturedNewsPanel - Hiển thị bài nổi bật
+ * FeaturedNewsPanel - Featured market news panel
  *
- * Design theo FireAnt với:
- * - Tiêu đề "Bài nổi bật"
- * - Danh sách bài viết với thumbnail bên trái
- * - Tiêu đề và thời gian đăng
+ * FireAnt-style design:
+ * - Title "Featured news"
+ * - List of articles with thumbnail on the left
+ * - Title and time-ago on the right
  */
 export default function FeaturedNewsPanel() {
   const [news, setNews] = useState<FeaturedNews[]>(MOCK_NEWS);
@@ -128,10 +128,10 @@ export default function FeaturedNewsPanel() {
     const diffMinutes = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
 
-    if (diffMinutes < 1) return "Vừa xong";
-    if (diffMinutes < 60) return `${diffMinutes} phút`;
-    if (diffHours < 24) return `Khoảng ${diffHours} tiếng`;
-    return `${Math.floor(diffHours / 24)} ngày`;
+    if (diffMinutes < 1) return "Just now";
+    if (diffMinutes < 60) return `${diffMinutes} min ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${Math.floor(diffHours / 24)} days ago`;
   };
 
   const getCategoryColor = (category: FeaturedNews["category"]): string => {
@@ -149,7 +149,7 @@ export default function FeaturedNewsPanel() {
     <div className="bg-white dark:bg-[#2a2d3a] rounded-lg shadow-lg h-full overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Bài nổi bật</h2>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Featured news</h2>
         <button className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -182,11 +182,15 @@ export default function FeaturedNewsPanel() {
               <div className="flex gap-2">
                 {/* Thumbnail */}
                 <div className="relative w-20 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-200 dark:bg-gray-800">
+                  {/* ✅ Step 5: Lazy Load Images - Next.js Image with lazy loading */}
                   <Image
                     src={article.thumbnail}
                     alt={article.title}
                     fill
                     className="object-cover"
+                    loading="lazy"
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                     unoptimized
                   />
                 </div>

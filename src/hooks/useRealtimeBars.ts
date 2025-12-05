@@ -3,9 +3,11 @@
 import { useRealtimeContext } from "@/contexts/RealtimeContext";
 
 export function useRealtimeBars() {
-  const { latestBars } = useRealtimeContext();
-  return latestBars;
+  const { latestTrades } = useRealtimeContext();
+  return latestTrades;
 }
+
+
 
 
 

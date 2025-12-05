@@ -20,11 +20,13 @@ export interface HeatmapChartProps {
   height?: number;
 }
 
-export default function HeatmapChart({
+const HeatmapChart = React.memo(function HeatmapChart({
   data,
   height = 600,
 }: HeatmapChartProps) {
   // Transform data for Recharts Treemap
+  // Stocks đã được sắp xếp theo volume (descending) trong useRealtimeHeatmap
+  // Treemap sẽ tự động sắp xếp từ trái sang phải, trên xuống dưới theo size
   const treemapData = useMemo(() => {
     if (!data || !data.sectors) return [];
 
@@ -41,16 +43,17 @@ export default function HeatmapChart({
               typeof stock.price === "number" &&
               !isNaN(stock.price)
           )
-          .map((stock) => ({
+          .map((stock, index) => ({
             name: stock.ticker,
             fullName: stock.name,
-            size: stock.size ?? 1, // Treemap cell size
-            marketCap: stock.marketCap, // Optional legacy display value
+            size: stock.size ?? 1, // Treemap cell size (dựa trên volume)
             changePercent: stock.changePercent,
             price: stock.price,
             change: stock.change,
             sector: sector.sector,
             volume: stock.volume,
+            // Thêm index để giữ thứ tự sắp xếp (volume descending)
+            sortIndex: index,
           })),
       }))
       .filter((sector) => sector.children.length > 0);
@@ -58,65 +61,20 @@ export default function HeatmapChart({
 
   // Custom content for each cell
   const CustomizedContent = (props: any) => {
-    const { x, y, width, height, name, fullName, changePercent, price, value, depth } =
-      props;
-
-    // Render parent cells (sectors) with FireAnt-style sector title
-    // This renders at depth === 1, which is the sector level in the hierarchical Treemap
-    if (depth === 1) {
-      // Sector container styling
-      const sectorBgColor = "#1a1d28"; // Darker background for sector containers
-      const sectorBorderColor = "#4b5563"; // Visible border color (gray-600)
-      const sectorBorderWidth = 2; // Visible border width
-
-      // FireAnt-style sector title styling (text only, no background box)
-      const titleFontSize = 11; // Font size
-      const titleFontWeight = 600; // Font weight as specified
-      const titleTextColor = "#d0d3d8"; // Light gray color as specified
-      const titlePaddingLeft = 7; // Padding-left: 6-8px (using 7px)
-      const titleOffsetY = 18; // Reserve ~18-22px height at top (using 18px)
-      
-      // Convert sector name to uppercase for FireAnt-style display
-      const sectorTitle = name ? name.toUpperCase() : "";
-
-      return (
-        <g>
-          {/* Sector background with border - this is the container for all stock tiles */}
-          <rect
-            x={x}
-            y={y}
-            width={width}
-            height={height}
-            style={{
-              fill: sectorBgColor,
-              stroke: sectorBorderColor,
-              strokeWidth: sectorBorderWidth,
-              strokeDasharray: "0", // Solid border
-            }}
-            rx={2} // Slight rounded corners
-            ry={2}
-          />
-          {/* FireAnt-style sector title - text only, no background box */}
-          {/* Positioned at top-left inside sector rectangle, reserves space to prevent overlap with child tiles */}
-          {sectorTitle && width > 20 && height > titleOffsetY && (
-            <text
-              x={x + titlePaddingLeft}
-              y={y + titleOffsetY}
-              textAnchor="start"
-              fill={titleTextColor}
-              fontSize={titleFontSize}
-              fontWeight={titleFontWeight}
-              style={{
-                pointerEvents: "none", // Don't block interactions with stock tiles
-                userSelect: "none", // Prevent text selection
-              }}
-            >
-              {sectorTitle}
-            </text>
-          )}
-        </g>
-      );
-    }
+    const {
+      x,
+      y,
+      width,
+      height,
+      name,
+      fullName,
+      changePercent,
+      price,
+      value,
+      depth,
+      parent,
+      index,
+    } = props;
 
     // Guard against undefined values
     if (typeof changePercent === "undefined" || typeof price === "undefined") {
@@ -146,6 +104,8 @@ export default function HeatmapChart({
     // Add visual padding/gap between stock tiles within sectors
     // This creates a subtle gap effect by slightly reducing the rendered size
     const padding = 1; // 1px visual gap between tiles
+
+    // Base adjusted values
     const adjustedX = x + padding / 2;
     const adjustedY = y + padding / 2;
     const adjustedWidth = width - padding;
@@ -163,6 +123,7 @@ export default function HeatmapChart({
             fill: bgColor,
             stroke: "rgba(0, 0, 0, 0.1)", // Subtle border for tile separation
             strokeWidth: 0.5,
+            transition: "all 0.3s ease-out", // Smooth transition for position/size changes
           }}
           rx={1} // Slight rounded corners for modern look
           ry={1}
@@ -220,6 +181,45 @@ export default function HeatmapChart({
             {price?.toFixed(2) ?? "0.00"}
           </text>
         )}
+
+        {/* Overlay sector border + title on top of all child tiles.
+            We draw this from the child nodes (depth >= 2) so that the text/border
+            appears above the stock rectangles, but we don't touch the layout. */}
+        {parent && parent.depth === 1 && parent.x != null && parent.y != null && (
+          <>
+            <rect
+              x={parent.x}
+              y={parent.y}
+              width={parent.width}
+              height={parent.height}
+              style={{
+                fill: "none",
+                stroke: "#4b5563",
+                strokeWidth: 1.5,
+                strokeDasharray: "0",
+                pointerEvents: "none",
+              }}
+              rx={2}
+              ry={2}
+            />
+            {parent.width > 40 && parent.height > 20 && (
+              <text
+                x={parent.x + 7}
+                y={parent.y + 16}
+                textAnchor="start"
+                fill="#d0d3d8"
+                fontSize={11}
+                fontWeight={600}
+                style={{
+                  pointerEvents: "none",
+                  userSelect: "none",
+                }}
+              >
+                {String(parent.name || "").toUpperCase()}
+              </text>
+            )}
+          </>
+        )}
       </g>
     );
   };
@@ -242,17 +242,17 @@ export default function HeatmapChart({
           </div>
           <div className="pt-2 space-y-1 text-xs">
             <div className="flex justify-between gap-3">
-              <span className="text-gray-400">Ngành:</span>
+              <span className="text-gray-400">Sector:</span>
               <span className="font-medium text-gray-200">{data.sector}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-400">Giá:</span>
+              <span className="text-gray-400">Price:</span>
               <span className="font-semibold text-gray-100">
                 {data.price?.toFixed(2) ?? "0.00"}
               </span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-400">% Thay đổi:</span>
+              <span className="text-gray-400">% Change:</span>
               <span
                 className={`font-semibold ${
                   isPositive ? "text-green-500" : "text-red-500"
@@ -263,25 +263,11 @@ export default function HeatmapChart({
               </span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-400">Khối lượng:</span>
+              <span className="text-gray-400">Volume:</span>
               <span className="font-medium text-gray-200">
                 {Number.isFinite(data.volume)
                   ? data.volume.toLocaleString()
                   : "0"}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-gray-400">Vốn hóa:</span>
-              <span className="font-medium text-gray-200">
-                {typeof data.marketCap === "number" && data.marketCap > 0
-                  ? formatMarketCap(data.marketCap)
-                  : "N/A"}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-gray-400">Size (debug):</span>
-              <span className="font-medium text-gray-200">
-                {Number.isFinite(data.size) ? data.size.toFixed(0) : "1"}
               </span>
             </div>
           </div>
@@ -302,50 +288,74 @@ export default function HeatmapChart({
   }
 
   return (
-    <div 
-      className="w-full h-full" 
-      style={{ 
-        height,
-        // Ensure Treemap background matches panel background (transparent/dark)
+    <div
+      className="w-full h-full flex flex-col"
+      style={{
+        // Let parent container control height; only ensure background is correct
         backgroundColor: "transparent",
       }}
     >
-      <ResponsiveContainer width="100%" height="100%">
-        <Treemap
-          data={treemapData}
-          dataKey="size"
-          stroke="#1a1d28" // Match sector background for cleaner look
-          fill="transparent" // Transparent to inherit panel background
-          content={<CustomizedContent />}
-          isAnimationActive={false}
-          aspectRatio={4 / 3}
-        >
-          <Tooltip content={<CustomTooltip />} />
-        </Treemap>
-      </ResponsiveContainer>
+      <div className="flex-1 min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <Treemap
+            data={treemapData}
+            dataKey="size"
+            stroke="#1a1d28" // Match sector background for cleaner look
+            fill="transparent" // Transparent to inherit panel background
+            content={<CustomizedContent />}
+            isAnimationActive={true}
+            animationDuration={600}
+            animationEasing="ease-out"
+            aspectRatio={4 / 3}
+          >
+            <Tooltip content={<CustomTooltip />} />
+          </Treemap>
+        </ResponsiveContainer>
+      </div>
 
-      {/* Legend */}
-      <div className="mt-2 flex items-center justify-center gap-4 text-xs">
+      {/* Legend - aligned with getColorFromChangePercent thresholds */}
+      <div className="mt-2 flex items-center justify-center gap-4 text-xs flex-shrink-0">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></div>
-          <span className="text-gray-300">Tăng</span>
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#166F00" }}
+          ></div>
+          <span className="text-gray-300">Strong gain (≥ +5%)</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#fbbf24' }}></div>
-          <span className="text-gray-300">Không đổi</span>
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#76E600" }}
+          ></div>
+          <span className="text-gray-300">Mild–moderate gain (0 → +5%)</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#fb923c' }}></div>
-          <span className="text-gray-300">Giảm nhẹ</span>
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#FF661A" }}
+          ></div>
+          <span className="text-gray-300">Mild loss (0 → -2%)</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
-          <span className="text-gray-300">Giảm nhiều</span>
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#F00000" }}
+          ></div>
+          <span className="text-gray-300">Moderate loss (-2 → -5%)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div
+            className="w-3 h-3 rounded"
+            style={{ backgroundColor: "#A10000" }}
+          ></div>
+          <span className="text-gray-300">Deep loss (≤ -5%)</span>
         </div>
       </div>
     </div>
   );
-}
+});
+
+export default HeatmapChart;
 
 // ==========================================
 // HELPER FUNCTIONS

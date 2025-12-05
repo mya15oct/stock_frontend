@@ -13,28 +13,23 @@
 "use client";
 
 import React from "react";
+import { useRealtimeHeatmap } from "@/hooks/useRealtimeHeatmap";
 import { LeftChartPanel, HeatmapPanel } from "@/components/market";
 import FeaturedNewsPanel from "@/components/market/FeaturedNewsPanel";
+import type { HeatmapData } from "@/types/market";
 
 export default function MarketOverviewPage() {
+  // ✅ Step 1: Consolidate API Calls - Call useRealtimeHeatmap once at page level
+  const heatmapData = useRealtimeHeatmap();
+
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden">
       {/* ===================================
           MAIN CONTENT - Fit to viewport
           =================================== */}
-      <div className="flex-1 w-full max-w-[1920px] mx-auto px-4 lg:px-6 xl:px-8 py-3 flex flex-col overflow-hidden">
-        {/* Page Title */}
-        <div className="mb-2 flex-shrink-0">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-            Market Overview
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Real-time market data and analysis
-          </p>
-        </div>
-
-        {/* 3 Column Layout: 1:2:1 ratio (25%:50%:25%) */}
-        {/* Grid: 1fr 2fr 1fr with 20px gap, fits viewport height */}
+      <div className="flex-1 w-full max-w-[1920px] mx-auto px-4 lg:px-6 xl:px-8 pt-3 pb-2 flex flex-col overflow-hidden">
+        {/* 3 Column Layout: 0.8:2.4:0.8 ratio (~20%:60%:20%) */}
+        {/* Grid: 0.8fr 2.4fr 0.8fr with 20px gap, fits viewport height */}
         {/* Mobile: stack vertically, Desktop: 3 columns */}
         <div 
           className="flex-1 grid gap-5 overflow-hidden"
@@ -46,19 +41,19 @@ export default function MarketOverviewPage() {
           <div 
             className="hidden lg:grid gap-5 h-full overflow-hidden"
             style={{
-              gridTemplateColumns: "1fr 2fr 1fr",
+              gridTemplateColumns: "0.8fr 2.4fr 0.8fr",
               height: "calc(100vh - 120px)",
               alignItems: "start",
             }}
           >
             {/* LEFT COLUMN: Pie Chart + Money Flow Bar (25%) */}
             <div className="h-full overflow-hidden">
-              <LeftChartPanel />
+              <LeftChartPanel heatmapData={heatmapData} />
             </div>
 
             {/* CENTER COLUMN: Heatmap (50%) */}
             <div className="h-full overflow-hidden min-w-0">
-              <HeatmapPanel />
+              <HeatmapPanel heatmapData={heatmapData} />
             </div>
 
             {/* RIGHT COLUMN: News Feed (25%) - Internal scroll only */}
@@ -70,10 +65,10 @@ export default function MarketOverviewPage() {
           {/* Mobile: Stack vertically */}
           <div className="lg:hidden flex flex-col gap-4 h-full overflow-y-auto">
             <div className="flex-shrink-0">
-              <LeftChartPanel />
+              <LeftChartPanel heatmapData={heatmapData} />
             </div>
             <div className="flex-shrink-0 min-h-[520px]">
-              <HeatmapPanel />
+              <HeatmapPanel heatmapData={heatmapData} />
             </div>
             <div className="flex-shrink-0">
               <FeaturedNewsPanel />
@@ -84,3 +79,5 @@ export default function MarketOverviewPage() {
     </div>
   );
 }
+
+

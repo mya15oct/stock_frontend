@@ -10,19 +10,22 @@ import React, {
 } from "react";
 import { socket } from "@/services/realtimeSocket";
 
-export type BarPayload = {
+export type TradePayload = {
   symbol: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
+  price: number;
+  size: number;
+  /**
+   * Normalized timestamp in milliseconds since epoch.
+   * Backend sends ISO strings; we normalize them to number on the client.
+   */
   timestamp: number;
-  type: "bar";
+  type: "trade";
 };
 
 interface RealtimeContextValue {
-  latestBars: Map<string, BarPayload>;
+  latestTrades: Map<string, TradePayload>;
+  isConnected: boolean; // WebSocket connection status
+  lastTradeTimestamp: number | null; // Timestamp of last received trade
 }
 
 const RealtimeContext = createContext<RealtimeContextValue | undefined>(
@@ -30,85 +33,153 @@ const RealtimeContext = createContext<RealtimeContextValue | undefined>(
 );
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
-  const [bars, setBars] = useState<Map<string, BarPayload>>(new Map());
+  const [trades, setTrades] = useState<Map<string, TradePayload>>(new Map());
+  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [lastTradeTimestamp, setLastTradeTimestamp] = useState<number | null>(null);
 
   useEffect(() => {
-    // Validate bar payload before processing
-    const isValidBar = (bar: unknown): bar is BarPayload => {
-      if (!bar || typeof bar !== "object") return false;
-      const b = bar as Partial<BarPayload>;
+    // Validate trade payload before processing
+    const isValidTrade = (payload: unknown): payload is TradePayload => {
+      if (!payload || typeof payload !== "object") return false;
+      const t = payload as any;
+
+      const toNum = (v: unknown): number =>
+        typeof v === "number"
+          ? v
+          : typeof v === "string"
+          ? Number(v)
+          : NaN;
+
+      const tsRaw: unknown = t.timestamp;
+      const ts =
+        typeof tsRaw === "string"
+          ? Date.parse(tsRaw)
+          : typeof tsRaw === "number"
+          ? tsRaw
+          : NaN;
+
+      const price = toNum(t.price);
+      const size = toNum(t.size);
+
       return (
-        typeof b.symbol === "string" &&
-        typeof b.open === "number" &&
-        typeof b.high === "number" &&
-        typeof b.low === "number" &&
-        typeof b.close === "number" &&
-        typeof b.volume === "number" &&
-        typeof b.timestamp === "number" &&
-        b.type === "bar" &&
-        !Number.isNaN(b.open) &&
-        !Number.isNaN(b.high) &&
-        !Number.isNaN(b.low) &&
-        !Number.isNaN(b.close) &&
-        !Number.isNaN(b.volume)
+        typeof t.symbol === "string" &&
+        !Number.isNaN(price) &&
+        !Number.isNaN(size) &&
+        !Number.isNaN(ts)
       );
     };
 
-    const handler = (bar: BarPayload) => {
-      // Skip invalid bar payloads
-      if (!isValidBar(bar)) {
+    const handler = (trade: any) => {
+      // ✅ Step 4: Dev-only logging
+      if (process.env.NODE_ENV === 'development') {
         // eslint-disable-next-line no-console
-        console.warn("[RealtimeContext] Invalid bar payload received:", bar);
+        console.log("[RealtimeContext] Received trade_update:", trade);
+      }
+      
+      // Skip invalid trade payloads
+      if (!isValidTrade(trade)) {
+        // ✅ Step 4: Dev-only logging
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.warn("[RealtimeContext] Invalid trade payload received:", trade);
+        }
         return;
       }
 
-      setBars((prev) => {
+      const tradeTimestamp = typeof trade.timestamp === "string"
+        ? Date.parse(trade.timestamp)
+        : Number(trade.timestamp);
+      
+      setTrades((prev) => {
         const next = new Map(prev);
         // Normalize symbol to UPPERCASE for consistent internal state
-        const normalizedSymbol = bar.symbol.toUpperCase();
-        const normalizedBar: BarPayload = {
-          ...bar,
+        const normalizedSymbol = trade.symbol.toUpperCase();
+        const normalizedTrade: TradePayload = {
           symbol: normalizedSymbol,
+          price: Number(trade.price),
+          size: Number(trade.size),
+          timestamp: tradeTimestamp,
+          type: "trade",
         };
-        next.set(normalizedSymbol, normalizedBar);
+        next.set(normalizedSymbol, normalizedTrade);
+        // ✅ Step 4: Dev-only logging
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.log("[RealtimeContext] Updated trades map, size:", next.size, "symbol:", normalizedSymbol);
+        }
         return next;
       });
+      
+      // Update last trade timestamp
+      setLastTradeTimestamp(tradeTimestamp);
     };
 
     // Define connection handler at function scope so it's accessible in cleanup
     const onConnect = () => {
-      socket.on("bar_update", handler);
+      setIsConnected(true);
+      // ✅ Step 4: Dev-only logging
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log("[RealtimeContext] Socket connected, binding trade_update handler");
+      }
+      socket.on("trade_update", handler);
     };
 
-    // Re-bind handler on reconnect to ensure it's always active
-    const onReconnect = () => {
-      // Handler is already bound, but ensure it's still active
-      // Socket.IO automatically re-binds listeners on reconnect, but we log it
-      // eslint-disable-next-line no-console
-      console.log("[RealtimeContext] Socket reconnected, bar_update listener active");
+    const onDisconnect = () => {
+      setIsConnected(false);
     };
+
+    // Re-bind handler on reconnect to ensure it's still active
+    const onReconnect = () => {
+      setIsConnected(true);
+      // ✅ Step 4: Dev-only logging
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log("[RealtimeContext] Socket reconnected, re-binding trade_update handler");
+      }
+      // Re-bind handler để đảm bảo luôn active
+      socket.off("trade_update", handler); // Remove old handler trước
+      socket.on("trade_update", handler); // Bind lại
+    };
+
+    // Set up connection status listeners
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("reconnect", onReconnect);
 
     // Ensure socket is connected before adding listener
     if (socket.connected) {
-      socket.on("bar_update", handler);
+      setIsConnected(true);
+      // ✅ Step 4: Dev-only logging
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log("[RealtimeContext] Socket already connected, binding trade_update handler");
+      }
+      socket.on("trade_update", handler);
     } else {
-      // If not connected, wait for connection
-      socket.on("connect", onConnect);
+      setIsConnected(false);
+      // ✅ Step 4: Dev-only logging
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log("[RealtimeContext] Socket not connected, waiting for connect event");
+      }
     }
 
-    // Always set up reconnect handler
-    socket.on("reconnect", onReconnect);
-
     return () => {
-      socket.off("bar_update", handler);
+      socket.off("trade_update", handler);
       socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
       socket.off("reconnect", onReconnect);
     };
   }, []);
 
   const value = useMemo<RealtimeContextValue>(
-    () => ({ latestBars: bars }),
-    [bars]
+    () => ({ 
+      latestTrades: trades,
+      isConnected,
+      lastTradeTimestamp,
+    }),
+    [trades, isConnected, lastTradeTimestamp]
   );
 
   return (
@@ -127,7 +198,3 @@ export function useRealtimeContext(): RealtimeContextValue {
   }
   return ctx;
 }
-
-
-
-

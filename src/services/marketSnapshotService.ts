@@ -5,6 +5,11 @@ export type MarketSnapshot = {
   price: number;
   change: number;
   changePercent: number;
+  /**
+   * Previous day's close price for the symbol.
+   * Used as the baseline to compute price change % on the heatmap.
+   */
+  previousClose?: number;
   volume?: number;
 };
 
@@ -57,6 +62,7 @@ export async function fetchMarketSnapshots(
               price: json.data.currentPrice ?? 0,
               change: json.data.change ?? 0,
               changePercent: json.data.percentChange ?? 0,
+              previousClose: json.data.previousClose ?? undefined,
               // Volume is not exposed by the current quote API; keep it optional for future use.
             };
 
