@@ -5,8 +5,20 @@ export interface Stock {
   name: string;
   price: number;
   sector: string;
+  industry?: string;
+  change?: number;
+  changePercent?: number;
   priceChange?: number;
   priceChangePercent?: number;
+  dividendYield?: number;
+  dividendPerShare?: number;
+  exDividendDate?: string;
+  dividendDate?: string;
+  marketCap?: number;
+  pe?: number;
+  peRatio?: number;
+  eps?: number;
+  latestQuarter?: string;
 }
 
 export interface DividendEvent {

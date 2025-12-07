@@ -26,3 +26,5 @@ export function debounce<T extends (...args: any[]) => any>(
 export * from "./format";
 export * from "./date";
 export * from "./company";
+export * from "./gradients";
+export * from "./heatmapSelectors";

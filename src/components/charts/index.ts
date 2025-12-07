@@ -14,7 +14,17 @@ export type {
 } from "./ComparisonBarChart";
 
 export { default as PriceHistoryChart } from "./PriceHistoryChart";
-export type { PriceHistoryChartProps, PriceDataPoint, ChartType } from "./PriceHistoryChart";
+export type {
+  PriceHistoryChartProps,
+  PriceDataPoint,
+  ChartType,
+} from "./PriceHistoryChart";
+
+export { default as CandlestickChart } from "./CandlestickChart";
+export type { CandlestickChartProps } from "./CandlestickChart";
+
+export { default as HeatmapChart } from "./HeatmapChart";
+export type { HeatmapChartProps } from "./HeatmapChart";
 
 // Default colors cho charts
 export const CHART_COLORS = {

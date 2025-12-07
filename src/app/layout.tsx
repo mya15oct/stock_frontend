@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import { ClientProviders } from "@/components/providers/ClientProviders";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 
@@ -21,13 +20,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.className} min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors`}
+        className={`${inter.className} h-screen min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors`}
       >
         <ErrorBoundary>
           <ClientProviders>
             <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
+            {/* ✅ Chỉ dashboard có overflow-hidden, các trang khác có scrollbar bình thường */}
+            <main className="flex-1 overflow-y-auto page-transition">{children}</main>
           </ClientProviders>
         </ErrorBoundary>
       </body>

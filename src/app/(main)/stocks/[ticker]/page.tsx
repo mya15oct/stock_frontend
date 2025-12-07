@@ -98,8 +98,7 @@ function StockPageContent({ params }: { params: Promise<{ ticker: string }> }) {
         {/* Breadcrumb */}
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 rounded-lg mb-4 px-6 py-3">
           <Breadcrumb
-            country="United States of America"
-            sector="Industrials"
+            sector={stock.sector}
             companyName={stock.name}
             ticker={stock.ticker}
           />

@@ -8,45 +8,49 @@ export interface NavLink {
 
 export const mainNav: NavLink[] = [
   {
-    href: '/stocks',
-    label: 'Stocks',
+    href: "/market",
+    label: "Dashboard",
   },
   {
-    href: '/portfolio',
-    label: 'Portfolio',
+    href: "/stocks",
+    label: "Stocks",
+  },
+  {
+    href: "/portfolio",
+    label: "Portfolio",
   },
 ];
 
 export const toolsNav: NavLink[] = [
   {
-    href: '/tools/dividend-calendar',
-    label: 'Dividend Calendar',
-    icon: '💰',
-    description: 'View upcoming dividend payments',
+    href: "/tools/dividend-calendar",
+    label: "Dividend Calendar",
+    icon: "💰",
+    description: "View upcoming dividend payments",
   },
   {
-    href: '/tools/ex-dividend-calendar',
-    label: 'Ex-Dividend Calendar',
-    icon: '📅',
-    description: 'Track ex-dividend dates',
+    href: "/tools/ex-dividend-calendar",
+    label: "Ex-Dividend Calendar",
+    icon: "📅",
+    description: "Track ex-dividend dates",
   },
 ];
 
 export const footerNav: NavLink[] = [
   {
-    href: '/about',
-    label: 'About',
+    href: "/about",
+    label: "About",
   },
   {
-    href: '/contact',
-    label: 'Contact',
+    href: "/contact",
+    label: "Contact",
   },
   {
-    href: '/privacy',
-    label: 'Privacy',
+    href: "/privacy",
+    label: "Privacy",
   },
   {
-    href: '/terms',
-    label: 'Terms',
+    href: "/terms",
+    label: "Terms",
   },
 ];

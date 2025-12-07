@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/Card";
 import { useStealthMode } from "@/contexts/StealthContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { stockService } from "@/services/stockService";
 import type {
   PeriodType,
@@ -252,12 +252,235 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
     });
   };
 
-  const renderFinancialTable = () => {
+  // Group financial data by category
+  const getGroupedFinancialData = () => {
     const data = getCurrentData();
-
     if (!data) return null;
 
-    const sortedData = sortFinancialData(data.data);
+    const allData = data.data;
+
+    // Define financial statement structure based on active tab
+    if (activeTab === "income") {
+      return {
+        groups: [
+          {
+            title: "Revenue",
+            rows: [
+              { name: "Total Revenue", data: allData["Total Revenue"], isHighlighted: true },
+            ]
+          },
+          {
+            rows: [
+              { name: "COGS", data: allData["Cost Of Revenue"] || allData["Costof Goods And Services Sold"] },
+            ]
+          },
+          {
+            rows: [
+              { name: "Gross Profit", data: allData["Gross Profit"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Operating Expenses & Income",
+            rows: [
+              { name: "Operating Income", data: allData["Operating Income"] },
+              { name: "Total Operating Expenses", data: allData["Operating Expenses"] },
+              { name: "R&D Expenses", data: allData["Research And Development"] },
+              { name: "Selling General & Admin Expenses", data: allData["Selling General And Administrative"] },
+            ]
+          },
+          {
+            title: "Earnings from Continuing Operations",
+            rows: [
+              { name: "Interest Expense", data: allData["Interest Expense"] },
+              { name: "Interest Income", data: allData["Interest Income"] },
+              { name: "Income Tax Expense", data: allData["Income Tax Expense"] },
+            ]
+          },
+          {
+            title: "Net Income",
+            rows: [
+              { name: "Net Income", data: allData["Net Income"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Supplemental",
+            rows: [
+              { name: "EBIT", data: allData["EBIT"] || allData["Ebit"] },
+              { name: "EBITDA", data: allData["EBITDA"] || allData["Ebitda"] },
+            ]
+          },
+        ],
+        periods: data.periods
+      };
+    }
+
+    if (activeTab === "balance") {
+      return {
+        groups: [
+          {
+            title: "Cash & Short Term Investments",
+            rows: [
+              { name: "Cash & Equivalents", data: allData["Cash And Cash Equivalents At Carrying Value"] || allData["Cash And Cash Equivalents"] },
+              { name: "Short Term Investments", data: allData["Short Term Investments"] },
+              { name: "Total Cash & Short Term Investments", data: allData["Cash And Short Term Investments"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Receivables",
+            rows: [
+              { name: "Total Receivables", data: allData["Current Net Receivables"] || allData["Net Receivables"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Current Assets",
+            rows: [
+              { name: "Inventory", data: allData["Inventory"] },
+              { name: "Other Current Assets", data: allData["Other Current Assets"] },
+              { name: "Total Current Assets", data: allData["Total Current Assets"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Long Term Assets",
+            rows: [
+              { name: "Property, Plant & Equipment", data: allData["Property Plant Equipment"] },
+              { name: "Long Term Investments", data: allData["Long Term Investments"] },
+              { name: "Intangible Assets", data: allData["Intangible Assets"] },
+              { name: "Total Assets", data: allData["Total Assets"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Current Liabilities",
+            rows: [
+              { name: "Accounts Payable", data: allData["Current Accounts Payable"] },
+              { name: "Short Term Debt", data: allData["Short Term Debt"] },
+              { name: "Other Current Liabilities", data: allData["Other Current Liabilities"] },
+              { name: "Total Current Liabilities", data: allData["Total Current Liabilities"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Long Term Liabilities",
+            rows: [
+              { name: "Long Term Debt", data: allData["Long Term Debt"] },
+              { name: "Other Non-Current Liabilities", data: allData["Other Non Current Liabilities"] },
+              { name: "Total Non-Current Liabilities", data: allData["Total Non Current Liabilities"], isHighlighted: true },
+              { name: "Total Liabilities", data: allData["Total Liabilities"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Common Equity",
+            rows: [
+              { name: "Common Stock", data: allData["Common Stock"] },
+              { name: "Retained Earnings", data: allData["Retained Earnings"] },
+              { name: "Comprehensive Income", data: allData["Accumulated Other Comprehensive Income Loss"] },
+              { name: "Total Equity", data: allData["Stockholders Equity"] || allData["Total Stockholder Equity"], isHighlighted: true },
+              { name: "Total Liabilities And Equity", data: allData["Total Liabilities And Stockholders Equity"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Supplemental",
+            rows: [
+              { name: "Total Common Shares Outstanding", data: allData["Common Stock Shares Outstanding"] },
+              { name: "Total Debt", data: allData["Short Long Term Debt Total"] },
+              { name: "Net Debt", data: allData["Net Debt"] },
+              { name: "Enterprise value", data: allData["Enterprise Value"] },
+            ]
+          },
+        ],
+        periods: data.periods
+      };
+    }
+
+    if (activeTab === "cashflow") {
+      return {
+        groups: [
+          {
+            title: "Cash Flow From Operations",
+            rows: [
+              { name: "Depreciation & Amortization", data: allData["Depreciation And Amortization"] },
+              { name: "Total Cash From Operations", data: allData["Operating Cash Flow"] || allData["Cash Flow From Operations"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Cash Flow From Investing",
+            rows: [
+              { name: "Other Investing Activities", data: allData["Other Investing Activites"] },
+              { name: "Capital Expenditure", data: allData["Capital Expenditures"] },
+              { name: "Investments", data: allData["Investments"] },
+              { name: "Total Cash From Investing", data: allData["Investing Cash Flow"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Cash Flow From Financing Activities",
+            rows: [
+              { name: "Issuance and Repurchase of Common Stocks", data: allData["Sale Purchase Of Stock"] },
+              { name: "Dividends Paid", data: allData["Dividends Paid"] },
+              { name: "Total Cash From Financing", data: allData["Financing Cash Flow"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Net Change in Cash",
+            rows: [
+              { name: "Net Change in Cash", data: allData["Change In Cash"] || allData["Net Change In Cash"], isHighlighted: true },
+            ]
+          },
+          {
+            title: "Supplemental",
+            rows: [
+              { name: "Free Cash Flow", data: allData["Free Cash Flow"] },
+            ]
+          },
+        ],
+        periods: data.periods
+      };
+    }
+
+    // For statistics tab - show key metrics
+    if (activeTab === "statistics") {
+      return {
+        groups: [
+          {
+            title: "Keystats",
+            rows: [
+              { name: "EPS", data: allData["EPS"] },
+              { name: "PE", data: allData["PE Ratio"] },
+              { name: "Payout Ratio", data: allData["Payout Ratio"] },
+              { name: "Revenue per Share", data: allData["Revenue Per Share"] },
+              { name: "Price to Sales", data: allData["Price To Sales Ratio"] },
+              { name: "FCF per Share", data: allData["Free Cash Flow Per Share"] },
+              { name: "Price to FCF per Share", data: allData["Price To Free Cash Flow"] },
+              { name: "Book Value per Share", data: allData["Book Value Per Share"] },
+              { name: "Price to Book Value", data: allData["Price To Book Ratio"] },
+              { name: "EV to EBITDA", data: allData["Enterprise Value Over EBITDA"] },
+              { name: "Net Debt to EBITDA", data: allData["Net Debt To EBITDA"] },
+              { name: "Debt to Equity", data: allData["Total Debt To Total Equity"] },
+              { name: "Debt Coverage", data: allData["Debt Equity Ratio"] },
+              { name: "Interest Coverage Ratio", data: allData["Interest Coverage"] },
+              { name: "ROA", data: allData["Return On Assets"] },
+              { name: "ROE", data: allData["Return On Equity"] },
+              { name: "ROCE", data: allData["Return On Capital Employed"] },
+            ]
+          },
+        ],
+        periods: data.periods
+      };
+    }
+
+    // Fallback to sorted data for other tabs
+    const sortedData = sortFinancialData(allData);
+    return {
+      groups: [
+        {
+          rows: sortedData.map(([name, values]) => ({ name, data: values }))
+        }
+      ],
+      periods: data.periods
+    };
+  };
+
+  const renderFinancialTable = () => {
+    const groupedData = getGroupedFinancialData();
+
+    if (!groupedData) return null;
 
     return (
       <div>
@@ -286,7 +509,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                     <span>Line Item</span>
                   </div>
                 </th>
-                {data.periods.map((period) => (
+                {groupedData.periods.map((period) => (
                   <th
                     key={period}
                     className="text-right py-3 px-6 font-medium text-gray-600 dark:text-gray-400 min-w-[120px] bg-gray-50 dark:bg-gray-800"
@@ -297,83 +520,114 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
               </tr>
             </thead>
             <tbody className="relative">
-              {sortedData.map(([itemName, values], index) => {
-                const isSelected = selectedMetrics.includes(itemName);
-                const selectedIndex = selectedMetrics.indexOf(itemName);
-                const barColor = isSelected
-                  ? CHART_COLORS.primary[
-                  selectedIndex % CHART_COLORS.primary.length
-                  ]
-                  : "transparent";
+              {groupedData.groups.map((group, groupIndex) => (
+                <Fragment key={groupIndex}>
+                  {/* Group Title */}
+                  {group.title && (
+                    <tr className="bg-gray-100 dark:bg-gray-700">
+                      <td colSpan={groupedData.periods.length + 1} className="py-2 px-6 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+                        {group.title}
+                      </td>
+                    </tr>
+                  )}
+                  
+                  {/* Group Rows */}
+                  {group.rows.map((row, rowIndex) => {
+                    if (!row.data) return null; // Skip if no data
+                    
+                    const itemName = row.name;
+                    const isSelected = selectedMetrics.includes(itemName);
+                    const selectedIndex = selectedMetrics.indexOf(itemName);
+                    const barColor = isSelected
+                      ? CHART_COLORS.primary[selectedIndex % CHART_COLORS.primary.length]
+                      : "transparent";
 
-                // Calculate background for sticky cell to match row
-                const getLineCellBg = () => {
-                  if (isSelected) {
-                    return "bg-blue-50 dark:bg-blue-900";
-                  }
-                  return index % 2 === 0
-                    ? "bg-gray-50 dark:bg-gray-800"
-                    : "bg-white dark:bg-gray-900";
-                };
+                    const isHighlighted = row.isHighlighted;
 
-                const getLineCellHoverBg = () => {
-                  if (isSelected) {
-                    return "group-hover:!bg-blue-100 dark:group-hover:!bg-blue-800";
-                  }
-                  return "group-hover:bg-gray-100 dark:group-hover:bg-gray-800";
-                };
-
-                return (
-                  <tr
-                    key={itemName}
-                    onClick={() => toggleMetric(itemName)}
-                    className={`group border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all relative ${index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800" : "bg-white dark:bg-gray-900"
-                      } ${isSelected
-                        ? "!bg-blue-50 dark:!bg-blue-900 hover:!bg-blue-100 dark:hover:!bg-blue-800"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
-                  >
-                    <td className={`py-3 px-6 text-gray-700 dark:text-gray-300 sticky left-0 transition-colors ${getLineCellBg()} ${getLineCellHoverBg()}`}>
-                      <div className="relative flex items-center gap-2">
-                        <div
-                          className="w-1 h-6 rounded-full transition-all"
-                          style={{
-                            backgroundColor: barColor,
-                            opacity: isSelected ? 1 : 0
-                          }}
-                        />
-                        <Tooltip
-                          content={getMetricTooltip(itemName)}
-                          position="right"
-                        >
-                          <span
-                            className={`text-sm cursor-help ${isSelected ? "font-medium text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"
-                              }`}
-                          >
-                            {itemName}
-                          </span>
-                        </Tooltip>
-                      </div>
-                    </td>
-                    {data.periods.map((period) => {
-                      const cellValue = values[period];
-                      const isNegative = cellValue !== undefined && cellValue < 0;
-
-                      return (
-                        <td
-                          key={period}
-                          className={`py-3 px-6 text-right text-sm ${isNegative
-                            ? 'text-red-600 dark:text-red-400'
-                            : 'text-gray-700 dark:text-gray-300'
-                            }`}
-                        >
-                          {formatValueForTable(cellValue)}
+                    return (
+                      <tr
+                        key={`${groupIndex}-${rowIndex}`}
+                        onClick={() => toggleMetric(itemName)}
+                        className={`group border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all relative
+                          ${isHighlighted 
+                            ? "bg-blue-50 dark:bg-blue-900/30" 
+                            : rowIndex % 2 === 0 
+                              ? "bg-white dark:bg-gray-900" 
+                              : "bg-gray-50 dark:bg-gray-800"
+                          }
+                          ${isSelected
+                            ? "!bg-blue-100 dark:!bg-blue-800 hover:!bg-blue-200 dark:hover:!bg-blue-700"
+                            : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                          }
+                        `}
+                      >
+                        <td className={`py-3 px-6 text-gray-700 dark:text-gray-300 sticky left-0 transition-colors
+                          ${isHighlighted 
+                            ? "bg-blue-50 dark:bg-blue-900/30 font-semibold" 
+                            : rowIndex % 2 === 0 
+                              ? "bg-white dark:bg-gray-900" 
+                              : "bg-gray-50 dark:bg-gray-800"
+                          }
+                          ${isSelected && "!bg-blue-100 dark:!bg-blue-800"}
+                          group-hover:bg-gray-100 dark:group-hover:bg-gray-800
+                        `}>
+                          <div className="relative flex items-center gap-2">
+                            <div
+                              className="w-1 h-6 rounded-full transition-all"
+                              style={{
+                                backgroundColor: barColor,
+                                opacity: isSelected ? 1 : 0
+                              }}
+                            />
+                            <Tooltip
+                              content={getMetricTooltip(itemName)}
+                              position="right"
+                            >
+                              <span
+                                className={`text-sm cursor-help ${
+                                  isHighlighted 
+                                    ? "font-semibold text-gray-900 dark:text-white" 
+                                    : isSelected 
+                                      ? "font-medium text-gray-900 dark:text-white" 
+                                      : "text-gray-700 dark:text-gray-300"
+                                }`}
+                              >
+                                {itemName}
+                              </span>
+                            </Tooltip>
+                          </div>
                         </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
+                        {groupedData.periods.map((period) => {
+                          const cellValue = row.data[period];
+                          const isNegative = cellValue !== undefined && cellValue < 0;
+
+                          return (
+                            <td
+                              key={period}
+                              className={`py-3 px-6 text-right text-sm ${
+                                isNegative
+                                  ? 'text-red-600 dark:text-red-400'
+                                  : isHighlighted
+                                    ? 'font-semibold text-gray-900 dark:text-white'
+                                    : 'text-gray-700 dark:text-gray-300'
+                              }`}
+                            >
+                              {formatValueForTable(cellValue)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  
+                  {/* Spacer after group (except last group) */}
+                  {groupIndex < groupedData.groups.length - 1 && (
+                    <tr className="h-2 bg-gray-50 dark:bg-gray-900">
+                      <td colSpan={groupedData.periods.length + 1}></td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
             </tbody>
           </table>
         </div>
