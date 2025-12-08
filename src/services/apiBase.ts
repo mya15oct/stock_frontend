@@ -42,9 +42,9 @@ export async function apiRequest<T>(
     throw new Error(data.error || "API request failed");
   }
 
-  // If response has success and data properties, extract data
-  if (data.success && data.data) {
-    return data.data;
+  // If response has success and data/results properties, extract data
+  if (data.success && (data.data || (data as any).results)) {
+    return data.data || (data as any).results;
   }
 
   // If response doesn't have success property, assume it's the data itself
