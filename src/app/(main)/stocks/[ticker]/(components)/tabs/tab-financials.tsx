@@ -542,10 +542,10 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
               {groupedData.groups.map((group, groupIndex) => (
                 <Fragment key={groupIndex}>
                   {/* Group Title */}
-                  {group.title && (
+                  {(group as any).title && (
                     <tr className="bg-gray-100 dark:bg-gray-700">
                       <td colSpan={groupedData.periods.length + 1} className="py-2 px-6 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-                        {group.title}
+                        {(group as any).title}
                       </td>
                     </tr>
                   )}
@@ -565,7 +565,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                       ? CHART_COLORS.primary[selectedIndex % CHART_COLORS.primary.length]
                       : "transparent";
 
-                    const isHighlighted = row.isHighlighted;
+                    const isHighlighted = (row as any).isHighlighted;
 
                     return (
                       <tr
@@ -620,7 +620,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                           </div>
                         </td>
                         {groupedData.periods.map((period) => {
-                          const cellValue = row.data[period];
+                          const cellValue = row.data?.[period];
                           const isNegative = cellValue !== undefined && cellValue < 0;
 
                           return (

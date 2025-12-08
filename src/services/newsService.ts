@@ -6,7 +6,7 @@
  */
 
 import { FeaturedNews } from "@/types/market";
-import apiClient from "./apiClient";
+import { apiRequest } from "./apiClient";
 
 /**
  * Get featured news articles
@@ -16,10 +16,9 @@ import apiClient from "./apiClient";
  */
 export async function getNews(limit: number = 6): Promise<FeaturedNews[]> {
   try {
-    const response = await apiClient.get<FeaturedNews[]>("/api/market/news", {
-      params: { limit },
-    });
-    return response.data;
+    const endpoint = `/api/market/news?limit=${limit}`;
+    const data = await apiRequest<FeaturedNews[]>(endpoint);
+    return data;
   } catch (error) {
     console.error("Failed to fetch news:", error);
     // Fallback to empty array on error
