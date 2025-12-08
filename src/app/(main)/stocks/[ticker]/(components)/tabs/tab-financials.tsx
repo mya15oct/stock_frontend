@@ -565,7 +565,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                       ? CHART_COLORS.primary[selectedIndex % CHART_COLORS.primary.length]
                       : "transparent";
 
-                    const isHighlighted = row.isHighlighted;
+                    const isHighlighted = (row as any).isHighlighted;
 
                     return (
                       <tr
