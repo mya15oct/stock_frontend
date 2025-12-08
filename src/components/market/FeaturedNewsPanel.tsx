@@ -232,7 +232,7 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
         const realChangePercent = stockData?.changePercent ?? article.changePercent;
 
         // Only update if change is significant (> 0.05% difference)
-        if (Math.abs(realChangePercent - article.changePercent) < 0.05) {
+        if (realChangePercent !== undefined && Math.abs(realChangePercent - article.changePercent) < 0.05) {
           return article;
         }
 
@@ -356,12 +356,12 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
                       {article.ticker && (
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-xs font-semibold ${article.changePercent === 0 ? 'text-yellow-500' :
-                              article.changePercent! > 0 ? 'text-green-500' : 'text-red-500'
+                            article.changePercent! > 0 ? 'text-green-500' : 'text-red-500'
                             }`}>
                             {article.ticker}
                           </span>
                           <span className={`text-xs font-medium ${article.changePercent === 0 ? 'text-yellow-500' :
-                              article.changePercent! > 0 ? 'text-green-500' : 'text-red-500'
+                            article.changePercent! > 0 ? 'text-green-500' : 'text-red-500'
                             }`}>
                             {article.changePercent! >= 0 ? '+' : ''}{article.changePercent?.toFixed(2)}%
                           </span>
