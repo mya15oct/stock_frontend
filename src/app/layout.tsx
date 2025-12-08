@@ -25,8 +25,8 @@ export default function RootLayout({
         <ErrorBoundary>
           <ClientProviders>
             <Header />
-            {/* ✅ Chỉ dashboard có overflow-hidden, các trang khác có scrollbar bình thường */}
-            <main className="flex-1 overflow-y-auto page-transition">{children}</main>
+            {/* Main content handles its own scrolling */}
+            <main className="flex-1 page-transition">{children}</main>
           </ClientProviders>
         </ErrorBoundary>
       </body>

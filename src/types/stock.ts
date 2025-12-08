@@ -23,6 +23,7 @@ export interface Stock {
   revenueGrowth?: number;
   netIncomeGrowth?: number;
   fcfGrowth?: number;
+  exchange?: string;
 }
 
 export interface QuoteData {

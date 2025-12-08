@@ -363,7 +363,7 @@ export default function DividendsTab({ ticker }: DividendsTabProps) {
                         </td>
                         <td className="py-3 px-2">
                           <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                            📊 {payout.period}
+                            {payout.period}
                           </span>
                         </td>
                       </tr>

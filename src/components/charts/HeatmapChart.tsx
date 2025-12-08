@@ -31,12 +31,12 @@ const HeatmapChart = React.memo(function HeatmapChart({
   // Handle click on stock tile - navigate to overview tab
   const handleStockClick = (ticker: string) => {
     if (navigating) return; // Prevent multiple clicks
-    
+
     setNavigating(ticker);
-    
+
     // Smooth scroll to top before navigation
     window.scrollTo({ top: 0, behavior: "smooth" });
-    
+
     // Small delay to allow scroll animation to start
     setTimeout(() => {
       router.push(`/stocks/${ticker.toUpperCase()}?tab=overview`);
@@ -96,7 +96,7 @@ const HeatmapChart = React.memo(function HeatmapChart({
       parent,
       index,
     } = props;
-    
+
     // Only make stock tiles clickable (not sector headers)
     const isStockTile = depth === 2;
 
@@ -136,7 +136,7 @@ const HeatmapChart = React.memo(function HeatmapChart({
     const adjustedHeight = height - padding;
 
     const isNavigating = navigating === name;
-    
+
     return (
       <g
         onClick={() => isStockTile && handleStockClick(name)}
@@ -323,9 +323,8 @@ const HeatmapChart = React.memo(function HeatmapChart({
             <div className="flex justify-between gap-3">
               <span className="text-gray-400">% Change:</span>
               <span
-                className={`font-semibold ${
-                  isPositive ? "text-green-500" : "text-red-500"
-                }`}
+                className={`font-semibold ${isPositive ? "text-green-500" : "text-red-500"
+                  }`}
               >
                 {isPositive ? "+" : ""}
                 {data.changePercent?.toFixed(2) ?? "0.00"}%
@@ -383,7 +382,7 @@ const HeatmapChart = React.memo(function HeatmapChart({
       </div>
 
       {/* Legend - aligned with getColorFromChangePercent thresholds */}
-      <div className="mt-2 flex items-center justify-center gap-4 text-xs flex-shrink-0">
+      <div className="mt-2 flex items-center justify-center gap-2 text-xs flex-shrink-0">
         <div className="flex items-center gap-1">
           <div
             className="w-3 h-3 rounded"
