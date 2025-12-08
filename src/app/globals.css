@@ -16,14 +16,18 @@
   }
 }
 
+/* Support class-based dark mode (e.g. from next-themes) */
+.dark {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
+  background: linear-gradient(to bottom,
       transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+      rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
 }
 
 /* Smooth page transitions */
@@ -31,38 +35,54 @@ body {
   .page-transition {
     animation: fadeIn 0.3s ease-in-out;
   }
-  
+
   @keyframes fadeIn {
     from {
       opacity: 0;
       transform: translateY(8px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
-  
+
   /* Smooth scroll behavior */
   html {
     scroll-behavior: smooth;
   }
-  
-  /* Prevent layout shift during navigation */
-  main {
-    min-height: 100vh;
-  }
-  
+
   /* Hide scrollbar for market page only */
   main.market-page-no-scrollbar {
     overflow: hidden !important;
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
+    scrollbar-width: none !important;
+    /* Firefox */
+    -ms-overflow-style: none !important;
+    /* IE and Edge */
   }
-  
+
   main.market-page-no-scrollbar::-webkit-scrollbar {
-    display: none !important; /* Chrome, Safari, Opera */
+    display: none !important;
+    /* Chrome, Safari, Opera */
     width: 0 !important;
     height: 0 !important;
+  }
+}
+
+@media print {
+  header {
+    display: none !important;
+  }
+
+  .hide-print {
+    display: none !important;
+  }
+
+  /* Ensure backgrounds are printed if user browser settings allow, 
+     but mainly to keep layout sane */
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

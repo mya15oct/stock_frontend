@@ -60,48 +60,48 @@ function getImageUrl(imageId: string): string {
   if (!imageId || imageId.trim() === '') {
     return FALLBACK_IMAGE;
   }
-  
+
   // Remove any leading/trailing whitespace
   const cleanId = imageId.trim();
-  
+
   // Return Unsplash URL with proper format
   return `https://images.unsplash.com/photo-${cleanId}?w=400&h=300&fit=crop&auto=format`;
 }
 
 // Generate mock news for multiple tickers with real changePercent from heatmap
 function generateMockNews(
-  tickers: string[], 
+  tickers: string[],
   stockDataMap: Map<string, { changePercent: number }>,
   count: number = 6
 ): FeaturedNews[] {
   const news: FeaturedNews[] = [];
   const baseTime = Date.now();
-  
+
   // Shuffle templates to avoid repetition
   const shuffledTemplates = [...NEWS_TEMPLATES].sort(() => Math.random() - 0.5);
   // Shuffle images to avoid repetition
   const shuffledImages = [...STOCK_IMAGES].sort(() => Math.random() - 0.5);
-  
+
   for (let i = 0; i < count && i < tickers.length; i++) {
     const ticker = tickers[i];
     const template = shuffledTemplates[i % shuffledTemplates.length];
-    
+
     // Get real changePercent from heatmap data
     const stockData = stockDataMap.get(ticker);
     let change = stockData?.changePercent ?? 0;
-    
+
     // If no data from heatmap, use a small random value
     if (!stockData) {
       change = Math.random() * 8 - 2; // Random between -2% and 6%
     }
-    
+
     const title = template
       .replace("{TICKER}", ticker)
       .replace("{PERCENT}", Math.abs(change).toFixed(2));
-    
+
     // Select image from shuffled images array
     const imageId = shuffledImages[i % shuffledImages.length];
-    
+
     news.push({
       id: `mock-${ticker}-${i}`,
       title,
@@ -114,7 +114,7 @@ function generateMockNews(
       category: "stock",
     });
   }
-  
+
   return news;
 }
 
@@ -145,7 +145,7 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
   // Extract stock data from heatmap to get real changePercent
   const stockDataMap = useMemo(() => {
     if (!heatmapData?.sectors) return new Map<string, { changePercent: number }>();
-    
+
     const map = new Map<string, { changePercent: number }>();
     heatmapData.sectors.forEach(sector => {
       sector.stocks.forEach(stock => {
@@ -183,12 +183,12 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
             }
           }
         }
-        
+
         // Select 6 different random tickers from the list
         const shuffled = [...allTickers].sort(() => Math.random() - 0.5);
         const selected = shuffled.slice(0, 6);
         setSelectedTickers(selected);
-        
+
         // Generate mock news for these tickers with real changePercent from heatmap
         const mockNews = generateMockNews(selected, stockDataMap, 6);
         setNews(mockNews);
@@ -203,14 +203,14 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
         setLoading(false);
       }
     };
-    
+
     loadMockNews();
   }, []); // Only run once on mount
 
   // Update news when heatmap data changes (to sync changePercent for all tickers)
   useEffect(() => {
     if (selectedTickers.length === 0 || news.length === 0) return;
-    
+
     // Update all news items with latest changePercent from heatmap
     setNews(prevNews => {
       return prevNews.map((article) => {
@@ -218,15 +218,15 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
         if (!ticker || !stockDataMap.has(ticker)) {
           return article; // Keep original if no data
         }
-        
+
         const stockData = stockDataMap.get(ticker);
         const realChangePercent = stockData?.changePercent ?? article.changePercent;
-        
+
         // Only update if change is significant (> 0.05% difference)
         if (Math.abs(realChangePercent - article.changePercent) < 0.05) {
           return article;
         }
-        
+
         // Extract template from existing title (remove ticker and percentage)
         // Example: "AAPL shares surge 3.45% on strong earnings..." -> "shares surge {PERCENT}% on strong earnings..."
         let template = article.title;
@@ -234,12 +234,12 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
         template = template.replace(new RegExp(ticker, 'gi'), '{TICKER}');
         // Replace percentage with placeholder (match pattern like "3.45%" or "-1.23%")
         template = template.replace(/\d+\.\d+%/g, '{PERCENT}%');
-        
+
         // Update title with new percentage
         const title = template
           .replace("{TICKER}", ticker)
           .replace("{PERCENT}", Math.abs(realChangePercent).toFixed(2));
-        
+
         return {
           ...article,
           change: realChangePercent,
@@ -313,12 +313,12 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
           ))}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-2 py-1 min-h-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
+        <div className="flex-1 px-2 py-1 min-h-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
           {news.map((article) => {
             const NewsItem = ({ article, formatTimeAgo, mounted }: { article: FeaturedNews; formatTimeAgo: (iso: string) => string; mounted: boolean }) => {
               const [imageError, setImageError] = React.useState(false);
               const imageSrc = imageError ? FALLBACK_IMAGE : article.thumbnail;
-              
+
               return (
                 <div className="group cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30 rounded p-2 transition-colors mb-2">
                   <div className="flex gap-2">
@@ -346,16 +346,14 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
                       {/* Ticker info (if exists) */}
                       {article.ticker && (
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-xs font-semibold ${
-                            article.changePercent === 0 ? 'text-yellow-500' :
-                            article.changePercent! > 0 ? 'text-green-500' : 'text-red-500'
-                          }`}>
+                          <span className={`text-xs font-semibold ${article.changePercent === 0 ? 'text-yellow-500' :
+                              article.changePercent! > 0 ? 'text-green-500' : 'text-red-500'
+                            }`}>
                             {article.ticker}
                           </span>
-                          <span className={`text-xs font-medium ${
-                            article.changePercent === 0 ? 'text-yellow-500' :
-                            article.changePercent! > 0 ? 'text-green-500' : 'text-red-500'
-                          }`}>
+                          <span className={`text-xs font-medium ${article.changePercent === 0 ? 'text-yellow-500' :
+                              article.changePercent! > 0 ? 'text-green-500' : 'text-red-500'
+                            }`}>
                             {article.changePercent! >= 0 ? '+' : ''}{article.changePercent?.toFixed(2)}%
                           </span>
                         </div>
@@ -377,7 +375,7 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
                 </div>
               );
             };
-            
+
             return <NewsItem key={article.id} article={article} formatTimeAgo={formatTimeAgo} mounted={mounted} />;
           })}
         </div>

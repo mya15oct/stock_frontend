@@ -17,7 +17,7 @@ interface FinancialsTabProps {
   ticker: string;
 }
 
-type DisplayFormat = "values" | "changes" | "yoy";
+
 
 export default function FinancialsTab({ ticker }: FinancialsTabProps) {
   const { isStealthMode } = useStealthMode();
@@ -25,7 +25,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
     "income" | "balance" | "cashflow" | "statistics"
   >("income");
   const [periodType, setPeriodType] = useState<PeriodType>("quarterly");
-  const [displayFormat, setDisplayFormat] = useState<DisplayFormat>("values");
+
 
   // API Data States
   const [incomeStatementData, setIncomeStatementData] =
@@ -259,6 +259,21 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
 
     const allData = data.data;
 
+    // Helper to safely get data with key fallback
+    const getRow = (name: string, keys: string | string[], isHighlighted = false) => {
+      const keyList = Array.isArray(keys) ? keys : [keys];
+      // Find the first key that exists in the data
+      const validKey = keyList.find(k => allData[k] !== undefined);
+
+      return {
+        name,
+        // vital: store the actual key used in data so we can look it up for the chart
+        key: validKey || keyList[0],
+        data: validKey ? allData[validKey] : undefined,
+        isHighlighted
+      };
+    };
+
     // Define financial statement structure based on active tab
     if (activeTab === "income") {
       return {
@@ -266,47 +281,47 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           {
             title: "Revenue",
             rows: [
-              { name: "Total Revenue", data: allData["Total Revenue"], isHighlighted: true },
+              getRow("Total Revenue", "Total Revenue", true),
             ]
           },
           {
             rows: [
-              { name: "COGS", data: allData["Cost Of Revenue"] || allData["Costof Goods And Services Sold"] },
+              getRow("COGS", ["Cost Of Revenue", "Costof Goods And Services Sold"]),
             ]
           },
           {
             rows: [
-              { name: "Gross Profit", data: allData["Gross Profit"], isHighlighted: true },
+              getRow("Gross Profit", "Gross Profit", true),
             ]
           },
           {
             title: "Operating Expenses & Income",
             rows: [
-              { name: "Operating Income", data: allData["Operating Income"] },
-              { name: "Total Operating Expenses", data: allData["Operating Expenses"] },
-              { name: "R&D Expenses", data: allData["Research And Development"] },
-              { name: "Selling General & Admin Expenses", data: allData["Selling General And Administrative"] },
+              getRow("Operating Income", "Operating Income"),
+              getRow("Total Operating Expenses", "Operating Expenses"),
+              getRow("R&D Expenses", "Research And Development"),
+              getRow("Selling General & Admin Expenses", "Selling General And Administrative"),
             ]
           },
           {
             title: "Earnings from Continuing Operations",
             rows: [
-              { name: "Interest Expense", data: allData["Interest Expense"] },
-              { name: "Interest Income", data: allData["Interest Income"] },
-              { name: "Income Tax Expense", data: allData["Income Tax Expense"] },
+              getRow("Interest Expense", "Interest Expense"),
+              getRow("Interest Income", "Interest Income"),
+              getRow("Income Tax Expense", "Income Tax Expense"),
             ]
           },
           {
             title: "Net Income",
             rows: [
-              { name: "Net Income", data: allData["Net Income"], isHighlighted: true },
+              getRow("Net Income", "Net Income", true),
             ]
           },
           {
             title: "Supplemental",
             rows: [
-              { name: "EBIT", data: allData["EBIT"] || allData["Ebit"] },
-              { name: "EBITDA", data: allData["EBITDA"] || allData["Ebitda"] },
+              getRow("EBIT", ["EBIT", "Ebit"]),
+              getRow("EBITDA", ["EBITDA", "Ebitda"]),
             ]
           },
         ],
@@ -320,69 +335,69 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           {
             title: "Cash & Short Term Investments",
             rows: [
-              { name: "Cash & Equivalents", data: allData["Cash And Cash Equivalents At Carrying Value"] || allData["Cash And Cash Equivalents"] },
-              { name: "Short Term Investments", data: allData["Short Term Investments"] },
-              { name: "Total Cash & Short Term Investments", data: allData["Cash And Short Term Investments"], isHighlighted: true },
+              getRow("Cash & Equivalents", ["Cash And Cash Equivalents At Carrying Value", "Cash And Cash Equivalents"]),
+              getRow("Short Term Investments", "Short Term Investments"),
+              getRow("Total Cash & Short Term Investments", "Cash And Short Term Investments", true),
             ]
           },
           {
             title: "Receivables",
             rows: [
-              { name: "Total Receivables", data: allData["Current Net Receivables"] || allData["Net Receivables"], isHighlighted: true },
+              getRow("Total Receivables", ["Current Net Receivables", "Net Receivables"], true),
             ]
           },
           {
             title: "Current Assets",
             rows: [
-              { name: "Inventory", data: allData["Inventory"] },
-              { name: "Other Current Assets", data: allData["Other Current Assets"] },
-              { name: "Total Current Assets", data: allData["Total Current Assets"], isHighlighted: true },
+              getRow("Inventory", "Inventory"),
+              getRow("Other Current Assets", "Other Current Assets"),
+              getRow("Total Current Assets", "Total Current Assets", true),
             ]
           },
           {
             title: "Long Term Assets",
             rows: [
-              { name: "Property, Plant & Equipment", data: allData["Property Plant Equipment"] },
-              { name: "Long Term Investments", data: allData["Long Term Investments"] },
-              { name: "Intangible Assets", data: allData["Intangible Assets"] },
-              { name: "Total Assets", data: allData["Total Assets"], isHighlighted: true },
+              getRow("Property, Plant & Equipment", "Property Plant Equipment"),
+              getRow("Long Term Investments", "Long Term Investments"),
+              getRow("Intangible Assets", "Intangible Assets"),
+              getRow("Total Assets", "Total Assets", true),
             ]
           },
           {
             title: "Current Liabilities",
             rows: [
-              { name: "Accounts Payable", data: allData["Current Accounts Payable"] },
-              { name: "Short Term Debt", data: allData["Short Term Debt"] },
-              { name: "Other Current Liabilities", data: allData["Other Current Liabilities"] },
-              { name: "Total Current Liabilities", data: allData["Total Current Liabilities"], isHighlighted: true },
+              getRow("Accounts Payable", "Current Accounts Payable"),
+              getRow("Short Term Debt", "Short Term Debt"),
+              getRow("Other Current Liabilities", "Other Current Liabilities"),
+              getRow("Total Current Liabilities", "Total Current Liabilities", true),
             ]
           },
           {
             title: "Long Term Liabilities",
             rows: [
-              { name: "Long Term Debt", data: allData["Long Term Debt"] },
-              { name: "Other Non-Current Liabilities", data: allData["Other Non Current Liabilities"] },
-              { name: "Total Non-Current Liabilities", data: allData["Total Non Current Liabilities"], isHighlighted: true },
-              { name: "Total Liabilities", data: allData["Total Liabilities"], isHighlighted: true },
+              getRow("Long Term Debt", "Long Term Debt"),
+              getRow("Other Non-Current Liabilities", "Other Non Current Liabilities"),
+              getRow("Total Non-Current Liabilities", "Total Non Current Liabilities", true),
+              getRow("Total Liabilities", "Total Liabilities", true),
             ]
           },
           {
             title: "Common Equity",
             rows: [
-              { name: "Common Stock", data: allData["Common Stock"] },
-              { name: "Retained Earnings", data: allData["Retained Earnings"] },
-              { name: "Comprehensive Income", data: allData["Accumulated Other Comprehensive Income Loss"] },
-              { name: "Total Equity", data: allData["Stockholders Equity"] || allData["Total Stockholder Equity"], isHighlighted: true },
-              { name: "Total Liabilities And Equity", data: allData["Total Liabilities And Stockholders Equity"], isHighlighted: true },
+              getRow("Common Stock", "Common Stock"),
+              getRow("Retained Earnings", "Retained Earnings"),
+              getRow("Comprehensive Income", "Accumulated Other Comprehensive Income Loss"),
+              getRow("Total Equity", ["Stockholders Equity", "Total Stockholder Equity"], true),
+              getRow("Total Liabilities And Equity", "Total Liabilities And Stockholders Equity", true),
             ]
           },
           {
             title: "Supplemental",
             rows: [
-              { name: "Total Common Shares Outstanding", data: allData["Common Stock Shares Outstanding"] },
-              { name: "Total Debt", data: allData["Short Long Term Debt Total"] },
-              { name: "Net Debt", data: allData["Net Debt"] },
-              { name: "Enterprise value", data: allData["Enterprise Value"] },
+              getRow("Total Common Shares Outstanding", "Common Stock Shares Outstanding"),
+              getRow("Total Debt", "Short Long Term Debt Total"),
+              getRow("Net Debt", "Net Debt"),
+              getRow("Enterprise value", "Enterprise Value"),
             ]
           },
         ],
@@ -396,37 +411,37 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           {
             title: "Cash Flow From Operations",
             rows: [
-              { name: "Depreciation & Amortization", data: allData["Depreciation And Amortization"] },
-              { name: "Total Cash From Operations", data: allData["Operating Cash Flow"] || allData["Cash Flow From Operations"], isHighlighted: true },
+              getRow("Depreciation & Amortization", "Depreciation And Amortization"),
+              getRow("Total Cash From Operations", ["Operating Cash Flow", "Cash Flow From Operations"], true),
             ]
           },
           {
             title: "Cash Flow From Investing",
             rows: [
-              { name: "Other Investing Activities", data: allData["Other Investing Activites"] },
-              { name: "Capital Expenditure", data: allData["Capital Expenditures"] },
-              { name: "Investments", data: allData["Investments"] },
-              { name: "Total Cash From Investing", data: allData["Investing Cash Flow"], isHighlighted: true },
+              getRow("Other Investing Activities", "Other Investing Activites"),
+              getRow("Capital Expenditure", "Capital Expenditures"),
+              getRow("Investments", "Investments"),
+              getRow("Total Cash From Investing", "Investing Cash Flow", true),
             ]
           },
           {
             title: "Cash Flow From Financing Activities",
             rows: [
-              { name: "Issuance and Repurchase of Common Stocks", data: allData["Sale Purchase Of Stock"] },
-              { name: "Dividends Paid", data: allData["Dividends Paid"] },
-              { name: "Total Cash From Financing", data: allData["Financing Cash Flow"], isHighlighted: true },
+              getRow("Issuance and Repurchase of Common Stocks", "Sale Purchase Of Stock"),
+              getRow("Dividends Paid", "Dividends Paid"),
+              getRow("Total Cash From Financing", "Financing Cash Flow", true),
             ]
           },
           {
             title: "Net Change in Cash",
             rows: [
-              { name: "Net Change in Cash", data: allData["Change In Cash"] || allData["Net Change In Cash"], isHighlighted: true },
+              getRow("Net Change in Cash", ["Change In Cash", "Net Change In Cash"], true),
             ]
           },
           {
             title: "Supplemental",
             rows: [
-              { name: "Free Cash Flow", data: allData["Free Cash Flow"] },
+              getRow("Free Cash Flow", "Free Cash Flow"),
             ]
           },
         ],
@@ -441,23 +456,23 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           {
             title: "Keystats",
             rows: [
-              { name: "EPS", data: allData["EPS"] },
-              { name: "PE", data: allData["PE Ratio"] },
-              { name: "Payout Ratio", data: allData["Payout Ratio"] },
-              { name: "Revenue per Share", data: allData["Revenue Per Share"] },
-              { name: "Price to Sales", data: allData["Price To Sales Ratio"] },
-              { name: "FCF per Share", data: allData["Free Cash Flow Per Share"] },
-              { name: "Price to FCF per Share", data: allData["Price To Free Cash Flow"] },
-              { name: "Book Value per Share", data: allData["Book Value Per Share"] },
-              { name: "Price to Book Value", data: allData["Price To Book Ratio"] },
-              { name: "EV to EBITDA", data: allData["Enterprise Value Over EBITDA"] },
-              { name: "Net Debt to EBITDA", data: allData["Net Debt To EBITDA"] },
-              { name: "Debt to Equity", data: allData["Total Debt To Total Equity"] },
-              { name: "Debt Coverage", data: allData["Debt Equity Ratio"] },
-              { name: "Interest Coverage Ratio", data: allData["Interest Coverage"] },
-              { name: "ROA", data: allData["Return On Assets"] },
-              { name: "ROE", data: allData["Return On Equity"] },
-              { name: "ROCE", data: allData["Return On Capital Employed"] },
+              getRow("EPS", "EPS"),
+              getRow("PE", "PE Ratio"),
+              getRow("Payout Ratio", "Payout Ratio"),
+              getRow("Revenue per Share", "Revenue Per Share"),
+              getRow("Price to Sales", "Price To Sales Ratio"),
+              getRow("FCF per Share", "Free Cash Flow Per Share"),
+              getRow("Price to FCF per Share", "Price To Free Cash Flow"),
+              getRow("Book Value per Share", "Book Value Per Share"),
+              getRow("Price to Book Value", "Price To Book Ratio"),
+              getRow("EV to EBITDA", "Enterprise Value Over EBITDA"),
+              getRow("Net Debt to EBITDA", "Net Debt To EBITDA"),
+              getRow("Debt to Equity", "Total Debt To Total Equity"),
+              getRow("Debt Coverage", "Debt Equity Ratio"),
+              getRow("Interest Coverage Ratio", "Interest Coverage"),
+              getRow("ROA", "Return On Assets"),
+              getRow("ROE", "Return On Equity"),
+              getRow("ROCE", "Return On Capital Employed"),
             ]
           },
         ],
@@ -470,7 +485,11 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
     return {
       groups: [
         {
-          rows: sortedData.map(([name, values]) => ({ name, data: values }))
+          rows: sortedData.map(([name, values]) => ({
+            name,
+            key: name, // For sorted data, the name is the key
+            data: values
+          }))
         }
       ],
       periods: data.periods
@@ -530,14 +549,18 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                       </td>
                     </tr>
                   )}
-                  
+
                   {/* Group Rows */}
                   {group.rows.map((row, rowIndex) => {
                     if (!row.data) return null; // Skip if no data
-                    
+
                     const itemName = row.name;
-                    const isSelected = selectedMetrics.includes(itemName);
-                    const selectedIndex = selectedMetrics.indexOf(itemName);
+                    // Use the validation data key for chart selection, not the display name!
+                    const metricKey = row.key;
+
+                    const isSelected = selectedMetrics.includes(metricKey);
+                    const selectedIndex = selectedMetrics.indexOf(metricKey);
+
                     const barColor = isSelected
                       ? CHART_COLORS.primary[selectedIndex % CHART_COLORS.primary.length]
                       : "transparent";
@@ -547,12 +570,12 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                     return (
                       <tr
                         key={`${groupIndex}-${rowIndex}`}
-                        onClick={() => toggleMetric(itemName)}
+                        onClick={() => toggleMetric(metricKey)}
                         className={`group border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all relative
-                          ${isHighlighted 
-                            ? "bg-blue-50 dark:bg-blue-900/30" 
-                            : rowIndex % 2 === 0 
-                              ? "bg-white dark:bg-gray-900" 
+                          ${isHighlighted
+                            ? "bg-blue-50 dark:bg-blue-900/30"
+                            : rowIndex % 2 === 0
+                              ? "bg-white dark:bg-gray-900"
                               : "bg-gray-50 dark:bg-gray-800"
                           }
                           ${isSelected
@@ -562,10 +585,10 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                         `}
                       >
                         <td className={`py-3 px-6 text-gray-700 dark:text-gray-300 sticky left-0 transition-colors
-                          ${isHighlighted 
-                            ? "bg-blue-50 dark:bg-blue-900/30 font-semibold" 
-                            : rowIndex % 2 === 0 
-                              ? "bg-white dark:bg-gray-900" 
+                          ${isHighlighted
+                            ? "bg-blue-50 dark:bg-blue-900/30 font-semibold"
+                            : rowIndex % 2 === 0
+                              ? "bg-white dark:bg-gray-900"
                               : "bg-gray-50 dark:bg-gray-800"
                           }
                           ${isSelected && "!bg-blue-100 dark:!bg-blue-800"}
@@ -580,17 +603,16 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                               }}
                             />
                             <Tooltip
-                              content={getMetricTooltip(itemName)}
+                              content={getMetricTooltip(metricKey)}
                               position="right"
                             >
                               <span
-                                className={`text-sm cursor-help ${
-                                  isHighlighted 
-                                    ? "font-semibold text-gray-900 dark:text-white" 
-                                    : isSelected 
-                                      ? "font-medium text-gray-900 dark:text-white" 
-                                      : "text-gray-700 dark:text-gray-300"
-                                }`}
+                                className={`text-sm cursor-help ${isHighlighted
+                                  ? "font-semibold text-gray-900 dark:text-white"
+                                  : isSelected
+                                    ? "font-medium text-gray-900 dark:text-white"
+                                    : "text-gray-700 dark:text-gray-300"
+                                  }`}
                               >
                                 {itemName}
                               </span>
@@ -604,13 +626,12 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                           return (
                             <td
                               key={period}
-                              className={`py-3 px-6 text-right text-sm ${
-                                isNegative
-                                  ? 'text-red-600 dark:text-red-400'
-                                  : isHighlighted
-                                    ? 'font-semibold text-gray-900 dark:text-white'
-                                    : 'text-gray-700 dark:text-gray-300'
-                              }`}
+                              className={`py-3 px-6 text-right text-sm ${isNegative
+                                ? 'text-red-600 dark:text-red-400'
+                                : isHighlighted
+                                  ? 'font-semibold text-gray-900 dark:text-white'
+                                  : 'text-gray-700 dark:text-gray-300'
+                                }`}
                             >
                               {formatValueForTable(cellValue)}
                             </td>
@@ -619,7 +640,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
                       </tr>
                     );
                   })}
-                  
+
                   {/* Spacer after group (except last group) */}
                   {groupIndex < groupedData.groups.length - 1 && (
                     <tr className="h-2 bg-gray-50 dark:bg-gray-900">
@@ -684,6 +705,10 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
 
         {/* Period Type and Display Format Selectors */}
         <div className="flex gap-3">
+          <div className="text-xs italic text-gray-500 dark:text-gray-400 cursor-default flex items-center">
+            Values, USD
+          </div>
+
           <div className="relative">
             <select
               value={periodType}
@@ -692,31 +717,6 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
             >
               <option value="annual">Annual</option>
               <option value="quarterly">Quarterly</option>
-            </select>
-            <svg
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </div>
-
-          <div className="relative">
-            <select
-              value={displayFormat}
-              onChange={(e) => setDisplayFormat(e.target.value as DisplayFormat)}
-              className="appearance-none px-4 py-2 pr-8 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="values">Values, USD</option>
-              <option value="changes">Changes, %</option>
-              <option value="yoy">YoY Growth, %</option>
             </select>
             <svg
               className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none"
@@ -741,7 +741,7 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                📊 Visualization
+                Visualization
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {selectedMetrics.length} metric

@@ -79,7 +79,11 @@ export default function StockHeader({
               </div>
             </div>
           </div>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors hide-print"
+            onClick={() => window.print()}
+            title="Print Financial Report"
+          >
             <svg
               className="w-5 h-5 text-gray-600"
               fill="none"

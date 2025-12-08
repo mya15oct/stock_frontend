@@ -149,13 +149,13 @@ export default function StocksPage() {
 
   return (
     <div className="space-y-6 px-4 md:px-6 lg:px-8">
-      <div className="bg-gray-50 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-3 border-b border-gray-200">
+      <div className="mb-4">
         <Breadcrumb customItems={getBreadcrumbItems()} />
       </div>
 
       <div className="pt-2">
-        <h1 className="text-3xl font-bold mb-2">{pageTitle}</h1>
-        <p className="text-gray-600">
+        <h1 className="text-3xl font-bold mb-2 dark:text-white">{pageTitle}</h1>
+        <p className="text-gray-600 dark:text-gray-400">
           {filteredStocks.length} stock{filteredStocks.length !== 1 ? "s" : ""}{" "}
           available
           {sector && ` in ${sector} sector`}
@@ -169,8 +169,8 @@ export default function StocksPage() {
           <button
             onClick={() => (window.location.href = "/stocks")}
             className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${!sector && !country
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
               }`}
           >
             All Sectors
@@ -182,8 +182,8 @@ export default function StocksPage() {
                 (window.location.href = `/stocks?sector=${encodeURIComponent(sectorName)}`)
               }
               className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${sector === sectorName
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                 }`}
             >
               {sectorName}

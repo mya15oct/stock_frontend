@@ -58,7 +58,7 @@ export default function Breadcrumb({
           <li key={index} className="inline-flex items-center">
             {index > 0 && (
               <svg
-                className="w-3 h-3 text-gray-400 mx-1"
+                className="w-3 h-3 text-gray-400 dark:text-gray-500 mx-1"
                 aria-hidden="true"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -77,7 +77,7 @@ export default function Breadcrumb({
             {item.href && !item.active ? (
               <Link
                 href={item.href}
-                className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
               >
                 {index === 0 && (
                   <svg
@@ -94,9 +94,8 @@ export default function Breadcrumb({
               </Link>
             ) : (
               <span
-                className={`inline-flex items-center text-sm font-medium ${
-                  item.active ? "text-gray-500 cursor-default" : "text-gray-700"
-                }`}
+                className={`inline-flex items-center text-sm font-medium ${item.active ? "text-gray-500 dark:text-gray-400 cursor-default" : "text-gray-700 dark:text-gray-300"
+                  }`}
               >
                 {index === 0 && !item.href && (
                   <svg
