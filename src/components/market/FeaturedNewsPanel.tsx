@@ -232,7 +232,7 @@ export default function FeaturedNewsPanel({ heatmapData }: FeaturedNewsPanelProp
         const realChangePercent = stockData?.changePercent ?? article.changePercent;
 
         // Only update if change is significant (> 0.05% difference)
-        if (realChangePercent !== undefined && Math.abs(realChangePercent - article.changePercent) < 0.05) {
+        if (realChangePercent !== undefined && article.changePercent !== undefined && Math.abs(realChangePercent - article.changePercent) < 0.05) {
           return article;
         }
 
