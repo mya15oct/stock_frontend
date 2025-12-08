@@ -9,6 +9,7 @@
  * - ✨ Smooth animation
  * - 🔒 Stealth mode để ẩn giá trị
  * - 📊 Tooltip hiển thị thông tin chi tiết
+ * - ⚖️ Benchmark Comparison (Dual Axis Mode: Price vs Index)
  */
 
 import {
@@ -24,6 +25,7 @@ import {
   Dot,
   Customized,
   Scatter,
+  Legend,
 } from "recharts";
 
 export interface PriceDataPoint {
@@ -39,6 +41,7 @@ export type ChartType = "line" | "candlestick";
 
 export interface PriceHistoryChartProps {
   data: PriceDataPoint[];
+  benchmarkData?: PriceDataPoint[]; // Data for comparison (e.g., S&P 500)
   height?: number;
   isStealthMode?: boolean;
   showMinMax?: boolean; // Hiển thị đường min/max
@@ -51,6 +54,7 @@ export interface PriceHistoryChartProps {
 
 export default function PriceHistoryChart({
   data,
+  benchmarkData,
   height = 400,
   isStealthMode = false,
   showMinMax = true,
@@ -60,11 +64,26 @@ export default function PriceHistoryChart({
   chartType = "line",
   onChartTypeChange,
 }: PriceHistoryChartProps) {
+  // Determine if we are in comparison mode
+  const isComparison = !!benchmarkData && benchmarkData.length > 0;
+
+  // Normalize data (simplified for dual-axis: just mapping benchmark price)
+  const normalizedData = isComparison
+    ? data.map((d, i) => {
+      const benchItem = benchmarkData[i] || benchmarkData[benchmarkData.length - 1];
+      return {
+        ...d,
+        benchPrice: benchItem?.price,
+      };
+    })
+    : data;
+
+
   // Tính toán interval để chia đều ticks
   const getTickInterval = () => {
     const dataLength = data.length;
     if (dataLength <= 1) return 0;
-    
+
     // Số tick tối đa mong muốn cho mỗi period
     const maxTicks: Record<string, number> = {
       "1d": 8,
@@ -76,28 +95,28 @@ export default function PriceHistoryChart({
       "5y": 10,   // 10 tick cho 5 năm
       "max": 8,
     };
-    
+
     const maxDesired = maxTicks[period] || 8;
-    
+
     // Nếu data ít hơn hoặc bằng maxTicks, hiển thị hết
     if (dataLength <= maxDesired) {
       return 0; // Show all ticks
     }
-    
+
     // Tính interval để có đúng số tick mong muốn
     // Công thức: interval = floor(dataLength / maxTicks) - 1
     const interval = Math.ceil(dataLength / maxDesired) - 1;
-    
+
     return Math.max(0, interval);
   };
 
   // Format date cho trục X dựa trên period
   const formatXAxisDate = (dateStr: string) => {
     if (dateStr.includes("'")) return dateStr;
-    
+
     try {
       const date = new Date(dateStr + 'T00:00:00');
-      
+
       // Format khác nhau cho từng period
       switch (period) {
         case "1d":
@@ -107,7 +126,7 @@ export default function PriceHistoryChart({
             month: "short",
             day: "numeric",
           });
-        
+
         case "1m":
         case "3m":
           // Hiển thị ngày: "Oct 31"
@@ -115,7 +134,7 @@ export default function PriceHistoryChart({
             month: "short",
             day: "numeric",
           });
-        
+
         case "6m":
         case "1y":
           // Hiển thị tháng/năm: "Oct 2024"
@@ -123,14 +142,14 @@ export default function PriceHistoryChart({
             month: "short",
             year: "numeric",
           });
-        
+
         case "5y":
         case "max":
           // Hiển thị năm: "2024"
           return date.toLocaleDateString("en-US", {
             year: "numeric",
           });
-        
+
         default:
           return date.toLocaleDateString("en-US", {
             month: "short",
@@ -142,46 +161,64 @@ export default function PriceHistoryChart({
     }
   };
 
-  // Tính min/max price - cần tính từ high/low cho candlestick
-  const getMinMaxPrices = () => {
+  // Get Min/Max for Main Stock (Left Axis)
+  const getMainMinMax = () => {
     if (chartType === "candlestick") {
-      // For candlestick: use high/low values
       const highs = data.map((d) => d.high || d.price);
       const lows = data.map((d) => d.low || d.price);
-      return {
-        min: Math.min(...lows),
-        max: Math.max(...highs),
-      };
-    } else {
-      // For line chart: use close price
-      const prices = data.map((d) => d.price);
-      return {
-        min: Math.min(...prices),
-        max: Math.max(...prices),
-      };
+      return { min: Math.min(...lows), max: Math.max(...highs) };
     }
+    const prices = data.map((d) => d.price);
+    return { min: Math.min(...prices), max: Math.max(...prices) };
   };
 
-  const { min: minPrice, max: maxPrice } = getMinMaxPrices();
-  const currentPrice = data[data.length - 1]?.price || 0;
+  // Get Min/Max for Benchmark (Right Axis)
+  const getBenchMinMax = () => {
+    if (!benchmarkData || benchmarkData.length === 0) return { min: 0, max: 0 };
+    const prices = benchmarkData.map(d => d.price);
+    return { min: Math.min(...prices), max: Math.max(...prices) };
+  };
 
-  // Tính toán domain để chia đều các mốc
-  const calculateNiceDomain = () => {
-    const range = maxPrice - minPrice;
+  const { min: minPrice, max: maxPrice } = getMainMinMax();
+  const { min: minBench, max: maxBench } = getBenchMinMax();
+
+  // Helper to calculate nice domain logic (reused for both axes)
+  const calculateNiceDomain = (min: number, max: number) => {
+    const range = max - min;
     const padding = range * 0.1; // 10% padding
-    const domainMin = minPrice - padding;
-    const domainMax = maxPrice + padding;
-    
-    // Làm tròn đẹp cho min/max
-    const niceMin = Math.floor(domainMin / 10) * 10;
-    const niceMax = Math.ceil(domainMax / 10) * 10;
-    
+    const domainMin = min - padding;
+    const domainMax = max + padding;
+
+    // Nice rounding
+    // For smaller numbers (e.g. stock price < 1000), round to nearest 1 or 10
+    // For index (e.g. 6000), round to nearest 100
+    // Fallback if log10 returns -Infinity or NaN for 0 values
+    if (max <= 0) return [domainMin, domainMax];
+
+    const power = Math.floor(Math.log10(max));
+    const roundTo = Math.pow(10, Math.max(0, power - 1)); // e.g. 100 -> 10, 1000 -> 100
+
+    const niceMin = Math.floor(domainMin / roundTo) * roundTo;
+    const niceMax = Math.ceil(domainMax / roundTo) * roundTo;
+
     return [niceMin, niceMax];
   };
 
-  const [yMin, yMax] = calculateNiceDomain();
+  const [yMin, yMax] = calculateNiceDomain(minPrice, maxPrice);
+  const [yBenchMin, yBenchMax] = calculateNiceDomain(minBench, maxBench);
 
-  // Format price cho tooltip và labels
+  // Format label cho tooltip và axis
+  const formatYAxis = (value: number) => {
+    if (isStealthMode) return "••••";
+    return `$${value.toFixed(2)}`;
+  };
+
+  // Format price for Benchmark Axis (Index value, usually no $)
+  const formatBenchAxis = (value: number) => {
+    if (isStealthMode) return "••••";
+    return `${value.toFixed(0)}`;
+  };
+
   const formatPrice = (value: number) => {
     if (isStealthMode) return "••••";
     return `$${value.toFixed(2)}`;
@@ -191,7 +228,7 @@ export default function PriceHistoryChart({
   const formatDate = (dateStr: string) => {
     // Nếu đã format sẵn dạng "Nov '24" thì giữ nguyên
     if (dateStr.includes("'")) return dateStr;
-    
+
     // Convert "2024-11-01" → "Nov 01, 2024"
     try {
       // Thêm 'T00:00:00' để tránh timezone issues
@@ -209,29 +246,57 @@ export default function PriceHistoryChart({
   // Custom tooltip for both line and candlestick
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const item = payload[0].payload;
 
-      if (chartType === "candlestick" && data.open !== undefined) {
+      if (isComparison) {
+        return (
+          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
+            <p className="text-xs text-gray-600 mb-2">{formatDate(item.date)}</p>
+            <div className="space-y-1 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <span className="font-medium text-gray-900 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></span>
+                  Stock
+                </span>
+                <span className="font-semibold text-gray-900">
+                  {formatPrice(item.price)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="font-medium text-gray-500 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                  S&P 500
+                </span>
+                <span className="font-semibold text-gray-600">
+                  {item.benchPrice ? item.benchPrice.toFixed(2) : "N/A"}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (chartType === "candlestick" && item.open !== undefined) {
         // Candlestick tooltip with OHLC
         return (
           <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-            <p className="text-xs text-gray-600 mb-2">{formatDate(data.date)}</p>
+            <p className="text-xs text-gray-600 mb-2">{formatDate(item.date)}</p>
             <div className="space-y-1 text-xs">
               <div className="flex justify-between gap-4">
                 <span className="text-gray-600">Open:</span>
-                <span className="font-semibold text-gray-900">{formatPrice(data.open)}</span>
+                <span className="font-semibold text-gray-900">{formatPrice(item.open)}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-gray-600">High:</span>
-                <span className="font-semibold text-green-600">{formatPrice(data.high)}</span>
+                <span className="font-semibold text-green-600">{formatPrice(item.high)}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-gray-600">Low:</span>
-                <span className="font-semibold text-red-600">{formatPrice(data.low)}</span>
+                <span className="font-semibold text-red-600">{formatPrice(item.low)}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-gray-600">Close:</span>
-                <span className="font-semibold text-gray-900">{formatPrice(data.close || data.price)}</span>
+                <span className="font-semibold text-gray-900">{formatPrice(item.close || item.price)}</span>
               </div>
             </div>
           </div>
@@ -241,9 +306,9 @@ export default function PriceHistoryChart({
       // Line chart tooltip
       return (
         <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-          <p className="text-xs text-gray-600 mb-1">{formatDate(data.date)}</p>
+          <p className="text-xs text-gray-600 mb-1">{formatDate(item.date)}</p>
           <p className="text-sm font-semibold text-gray-900">
-            {formatPrice(data.price)}
+            {formatPrice(item.price)}
           </p>
         </div>
       );
@@ -345,7 +410,7 @@ export default function PriceHistoryChart({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <ComposedChart
-        data={data}
+        data={normalizedData}
         margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
       >
         {/* X Axis */}
@@ -357,23 +422,39 @@ export default function PriceHistoryChart({
           tickFormatter={formatXAxisDate}
         />
 
-        {/* Y Axis */}
+        {/* Left Y-Axis (Main Stock) */}
         <YAxis
+          yAxisId="left"
           tick={{ fill: "#6b7280", fontSize: 12 }}
           axisLine={{ stroke: "#d1d5db" }}
-          tickFormatter={formatPrice}
+          tickFormatter={formatYAxis}
           domain={[yMin, yMax]}
           tickCount={8}
           allowDataOverflow={false}
         />
 
+        {/* Right Y-Axis (Benchmark) - Only visible in comparison mode */}
+        {isComparison && (
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{ fill: "#9ca3af", fontSize: 11 }}
+            axisLine={false}
+            tickFormatter={formatBenchAxis}
+            domain={[yBenchMin, yBenchMax]}
+            tickCount={8}
+            allowDataOverflow={false}
+          />
+        )}
+
         {/* Tooltip */}
         <Tooltip content={<CustomTooltip />} />
 
-        {/* Reference lines cho min/max */}
+        {/* Reference lines (Left Axis) */}
         {showMinMax && !isStealthMode && (
           <>
             <ReferenceLine
+              yAxisId="left"
               y={maxPrice}
               stroke="#10b981"
               strokeDasharray="3 3"
@@ -388,6 +469,7 @@ export default function PriceHistoryChart({
               }}
             />
             <ReferenceLine
+              yAxisId="left"
               y={minPrice}
               stroke="#ef4444"
               strokeDasharray="3 3"
@@ -405,11 +487,55 @@ export default function PriceHistoryChart({
         )}
 
         {/* Conditional rendering based on chart type */}
-        {chartType === "candlestick" ? (
+        {isComparison ? (
+          // Comparison Mode: Always Line Chart (Price + Index)
+          <>
+            <defs>
+              <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+                <stop offset="100%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+
+            {/* Benchmark Line (Right Axis, Gray, Dashed) */}
+            <Line
+              yAxisId="right"
+              type="linear"
+              dataKey="benchPrice"
+              stroke="#9ca3af" // gray-400
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+              animationDuration={animationDuration}
+            />
+
+            {/* Main Price Line (Left Axis, Colored, Area+Line) */}
+            <Area
+              yAxisId="left"
+              type="linear"
+              dataKey="price"
+              fill="url(#priceGradient)"
+              stroke="none"
+              animationDuration={animationDuration}
+              animationEasing="ease-out"
+            />
+            <Line
+              yAxisId="left"
+              type="linear"
+              dataKey="price"
+              stroke={color}
+              strokeWidth={2}
+              dot={false}
+              animationDuration={animationDuration}
+              animationEasing="ease-out"
+            />
+          </>
+        ) : chartType === "candlestick" ? (
           <>
             <Customized component={CandlestickLayer} />
             {/* Invisible scatter to enable tooltip on hover */}
             <Scatter
+              yAxisId="left" // Explicitly bind to left (default)
               dataKey="close"
               fill="transparent"
               isAnimationActive={false}
@@ -426,6 +552,7 @@ export default function PriceHistoryChart({
             </defs>
 
             <Area
+              yAxisId="left" // Default
               type="linear"
               dataKey="price"
               fill="url(#priceGradient)"
@@ -436,6 +563,7 @@ export default function PriceHistoryChart({
 
             {/* Line chart */}
             <Line
+              yAxisId="left" // Default
               type="linear"
               dataKey="price"
               stroke={color}
