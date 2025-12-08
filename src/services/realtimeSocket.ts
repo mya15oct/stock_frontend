@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client";
+import { BACKEND_URL } from "./apiBase";
 
 /**
  * Socket.IO client with auto-reconnection and exponential backoff
@@ -7,7 +8,7 @@ import { io, Socket } from "socket.io-client";
  * This happens when RealtimeProvider mounts, which is at app root level
  */
 const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL || "http://localhost:5000";
+  process.env.NEXT_PUBLIC_WS_URL || BACKEND_URL;
 
 export const socket: Socket = io(WS_URL, {
   transports: ["websocket", "polling"], // Cho phép cả websocket và polling fallback

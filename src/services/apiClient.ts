@@ -7,7 +7,7 @@ import type { ApiResponse } from "@/types";
 const BACKEND_URL =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 const PYTHON_API_URL =
-    process.env.NEXT_PUBLIC_PYTHON_API_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_PYTHON_API_URL || BACKEND_URL;
 
 export { BACKEND_URL, PYTHON_API_URL };
 
