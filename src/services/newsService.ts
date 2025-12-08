@@ -6,7 +6,7 @@
  */
 
 import { FeaturedNews } from "@/types/market";
-import apiClient from "./apiClient";
+import { apiClient } from "./apiClient";
 
 /**
  * Get featured news articles
