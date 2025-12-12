@@ -75,21 +75,25 @@ const HeatmapPanel = React.memo(function HeatmapPanel({ heatmapData: heatmapData
             const hasRealtimeData = heatmapData.sectors.some((sector) =>
               sector.stocks.some((stock) => stock.price > 0 || stock.volume > 0)
             );
-            
-            if (!isConnected || !hasRealtimeData) {
-              return (
-                <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-500">
-                  <div className="text-center">
-                    <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                    <p className="text-sm">Waiting for realtime data...</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {!isConnected ? "Connecting to WebSocket..." : "Waiting for trade updates..."}
-                    </p>
-                  </div>
-                </div>
-              );
-            }
-            
+
+            // Removed blocking check for !isConnected || !hasRealtimeData
+            // Always render the heatmap, even if data is partial (0 price/volume)
+            // The chart handles 0 values gracefully or shows empty state
+
+            return (
+              <div
+                className="w-full h-full rounded-md border border-white/8 dark:border-white/8 p-2 bg-transparent"
+                style={{
+                  borderRadius: "6px",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  minHeight: "520px",
+                  maxHeight: "600px",
+                }}
+              >
+                <HeatmapChart data={heatmapData} height={undefined} />
+              </div>
+            );
+
             return (
               <div
                 className="w-full h-full rounded-md border border-white/8 dark:border-white/8 p-2 bg-transparent"
@@ -125,9 +129,8 @@ const HeatmapPanel = React.memo(function HeatmapPanel({ heatmapData: heatmapData
                     {sector.displayName}:
                   </span>
                   <span
-                    className={`font-semibold ${
-                      sector.avgChange >= 0 ? "text-green-500" : "text-red-500"
-                    }`}
+                    className={`font-semibold ${sector.avgChange >= 0 ? "text-green-500" : "text-red-500"
+                      }`}
                   >
                     {sector.avgChange >= 0 ? "+" : ""}
                     {sector.avgChange?.toFixed(2) ?? "0.00"}%

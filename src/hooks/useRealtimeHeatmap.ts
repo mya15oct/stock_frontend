@@ -29,37 +29,37 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
   const initialLoadTimeRef = useRef<number | null>(null); // Track when initial load completed
   // Lưu baseline price (price đầu tiên) cho mỗi stock để tính changePercent
   const baselinePricesRef = useRef<Map<string, number>>(new Map());
-  
+
   // ✅ Step 6: Optimize Re-renders - Memoize expensive calculations
   // Kiểm tra xem có realtime data không (WS connected và có trade trong 30 giây)
   const hasActiveRealtimeData = useMemo(() => {
     if (!isConnected) return false;
     if (latestTrades.size === 0) return false;
     if (!lastTradeTimestamp) return false;
-    
+
     const timeSinceLastTrade = Date.now() - lastTradeTimestamp;
     const REALTIME_TIMEOUT_MS = 30 * 1000; // 30 giây
     return timeSinceLastTrade < REALTIME_TIMEOUT_MS;
   }, [isConnected, latestTrades.size, lastTradeTimestamp]);
-  
+
   // ✅ Step 2: Optimize Volume Polling - Debounce and increase interval to 5s, only poll when WebSocket connected
   useEffect(() => {
     if (!data) return; // Wait for initial data load
     if (!isConnected) return; // Only poll when WebSocket is connected
-    
+
     const symbols = data.sectors.flatMap((s) => s.stocks.map((stock) => stock.ticker));
     if (symbols.length === 0) return;
-    
+
     const now = Date.now();
     const VOLUME_POLL_INTERVAL_MS = 5000; // ✅ Increased from 2s to 5s to reduce network requests
-    
+
     // Throttle: don't fetch too frequently
     if (now - lastVolumeFetchRef.current < VOLUME_POLL_INTERVAL_MS) {
       return;
     }
-    
+
     lastVolumeFetchRef.current = now;
-    
+
     // Fetch volumes from DB API
     fetchAccumulatedVolumes(symbols)
       .then((volumes) => {
@@ -68,12 +68,12 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
       .catch((err) => {
         // Don't set error state, just log - volumes will fall back to snapshot volume
       });
-    
+
     // Set up polling interval
     const interval = setInterval(() => {
       // ✅ Only poll if WebSocket is still connected
       if (!isConnected) return;
-      
+
       fetchAccumulatedVolumes(symbols)
         .then((volumes) => {
           setDbVolumes(volumes);
@@ -82,7 +82,7 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
           // swallow polling errors; volumes will retry on next interval
         });
     }, VOLUME_POLL_INTERVAL_MS);
-    
+
     return () => {
       clearInterval(interval);
     };
@@ -171,7 +171,7 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
 
         // Fetch previousClose trong background và update sau (không block UI)
         const symbols = stocks.map((s) => s.symbol);
-        
+
         // ✅ Check market hours: nếu market đóng, fetch latest EOD data thay vì chờ realtime
         const marketOpen = isMarketOpen();
         if (!marketOpen) {
@@ -179,16 +179,16 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
           fetchLatestEodBatch(symbols)
             .then((eodData) => {
               if (!isMounted) return;
-              
+
               // Update data với EOD values
               setData((prev) => {
                 if (!prev) return prev;
-                
+
                 const updatedSectors: SectorGroup[] = prev.sectors.map((sector) => {
                   const updatedStocks: StockHeatmapItem[] = sector.stocks.map((stock) => {
                     const symbol = stock.ticker.toUpperCase();
                     const eod = eodData[symbol];
-                    
+
                     if (eod) {
                       return {
                         ...stock,
@@ -206,18 +206,18 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
                     }
                     return stock;
                   });
-                  
+
                   const avgChange = updatedStocks.length > 0
                     ? updatedStocks.reduce((sum, s) => sum + (s.changePercent ?? 0), 0) / updatedStocks.length
                     : 0;
-                  
+
                   return {
                     ...sector,
                     stocks: updatedStocks,
                     avgChange,
                   };
                 });
-                
+
                 return {
                   ...prev,
                   sectors: updatedSectors,
@@ -225,9 +225,9 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
                 };
               });
             })
-            .catch(() => {});
+            .catch(() => { });
         }
-        
+
         // Fetch previousClose để dùng cho realtime data (khi market mở)
         fetchPreviousClosesBatch(symbols)
           .then((previousCloses) => {
@@ -237,10 +237,18 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
               if (!prev) return prev;
               const updatedSectors = prev.sectors.map((sector) => ({
                 ...sector,
-                stocks: sector.stocks.map((stock) => ({
-                  ...stock,
-                  previousClose: previousCloses[stock.ticker],
-                })),
+                stocks: sector.stocks.map((stock) => {
+                  const pc = previousCloses[stock.ticker];
+                  // If price is 0 (no realtime trade yet), use previousClose as current price
+                  // so the heatmap displays meaningful values instead of 0
+                  const effectivePrice = stock.price === 0 ? (pc ?? 0) : stock.price;
+
+                  return {
+                    ...stock,
+                    price: effectivePrice,
+                    previousClose: pc,
+                  };
+                }),
               }));
               return {
                 ...prev,
@@ -281,7 +289,7 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
     if (!data) {
       return;
     }
-    
+
     // Nếu không connected hoặc không có trades → không hiển thị data
     if (!isConnected || latestTrades.size === 0) {
       // Giữ structure nhưng không update (sẽ hiển thị loading hoặc empty)
@@ -289,19 +297,19 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
     }
 
     const now = Date.now();
-    
+
     // Tăng throttle để giảm số lượng updates và tránh giật giật
     const isFirstUpdate = !hasReceivedRealtimeDataRef.current;
     const throttleMs = isFirstUpdate ? 1000 : 5000; // 1s cho lần đầu, 5s cho các lần sau
-    
+
     // Đánh dấu đã nhận realtime data (sau khi check isFirstUpdate)
     hasReceivedRealtimeDataRef.current = true;
-    
+
     // Throttle: không update quá thường xuyên
     if (now - lastApplyRef.current < throttleMs) {
       return;
     }
-    
+
     lastApplyRef.current = now;
 
     // Tạo Map để lookup trades nhanh hơn
@@ -349,7 +357,7 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
 
           // Có trade update → tính toán giá trị mới (price, change, changePercent, volume, size)
           const price = trade.price;
-          
+
           // Tính change và changePercent so với previousClose từ EOD (ngày hôm trước)
           // previousClose được lấy từ bảng stock_eod_prices (OFFSET 1 LIMIT 1)
           let baseline: number;
@@ -366,7 +374,7 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
             }
             baseline = firstPrice;
           }
-          
+
           // Tính change = giá hiện tại - giá close ngày hôm trước
           const change = price - baseline;
           // Tính changePercent = (change / previousClose) * 100
@@ -412,7 +420,7 @@ export function useRealtimeHeatmap(): UseRealtimeHeatmapResult {
         const avgChange =
           stocksWithValidChange.length > 0
             ? stocksWithValidChange.reduce((sum, s) => sum + (s.changePercent ?? 0), 0) /
-              stocksWithValidChange.length
+            stocksWithValidChange.length
             : sector.avgChange ?? 0;
 
         return {
