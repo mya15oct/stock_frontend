@@ -2,9 +2,9 @@
 import type { ApiResponse } from "@/types";
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-const PYTHON_API_URL =
-  process.env.NEXT_PUBLIC_PYTHON_API_URL || BACKEND_URL;
+  // process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:5000";
+  "http://127.0.0.1:5000";
+const PYTHON_API_URL = BACKEND_URL;
 
 export { BACKEND_URL, PYTHON_API_URL };
 
@@ -20,6 +20,7 @@ export async function apiRequest<T>(
     : `${BACKEND_URL}${endpoint}`;
 
   const response = await fetch(url, {
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
@@ -52,6 +53,10 @@ export async function apiRequest<T>(
     return data as unknown as T;
   }
 
-  // If data.success is true but data.data is missing
+  // If data.success is true but data.data is missing, it might be a simple success message
+  if (data.success) {
+    return data as unknown as T;
+  }
+
   throw new Error("Invalid API response structure");
 }

@@ -8,7 +8,8 @@ import { BACKEND_URL } from "./apiBase";
  * This happens when RealtimeProvider mounts, which is at app root level
  */
 const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL || BACKEND_URL;
+  // process.env.NEXT_PUBLIC_WS_URL || BACKEND_URL;
+  "http://127.0.0.1:5000";
 
 export const socket: Socket = io(WS_URL, {
   transports: ["websocket", "polling"], // Cho phép cả websocket và polling fallback
