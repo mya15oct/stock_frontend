@@ -16,11 +16,14 @@ type Tab = "overview" | "holdings" | "transactions";
 
 import { useSearchParams } from "next/navigation";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 export default function PortfolioPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab") as Tab;
   const [activeTab, setActiveTab] = useState<Tab>(tabParam || "overview");
+  const { user, loading: authLoading } = useAuth(); // Use Auth Context
 
   useEffect(() => {
     if (tabParam && ["overview", "holdings", "transactions"].includes(tabParam)) {
@@ -43,9 +46,10 @@ export default function PortfolioPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
-    // Auth Check
-    const token = localStorage.getItem("token");
-    if (!token) {
+    // Auth Check handled by useAuth, but we wait for it
+    if (authLoading) return;
+
+    if (!user) {
       router.push("/sign-in");
       return;
     }
@@ -53,14 +57,15 @@ export default function PortfolioPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // First fetch portfolios list to determine current portfolio
-        const userPortfolios = await portfolioService.getPortfolios();
+        // Fetch portfolios using real user ID
+        const userPortfolios = await portfolioService.getPortfolios(user.id);
         setPortfolios(userPortfolios);
 
         let currentId = selectedPortfolioId;
         // If selected ID is 'default_portfolio_id' and we have real portfolios, try to pick the first one or find the default one.
         // For now, if we have a list, use the first one if selectedId is not in the list.
         if (userPortfolios.length > 0) {
+          // ... (keep existing logic)
           let targetId = currentId;
 
           // 1. Check LocalStorage first if currentId is default (initial load)
@@ -89,7 +94,7 @@ export default function PortfolioPage() {
         }
 
         const [portfolioData, transactionsData] = await Promise.all([
-          portfolioService.getPortfolio(currentId),
+          portfolioService.getPortfolio(currentId, true), // Always fetch all data (active + sold)
           portfolioService.getTransactions(currentId),
         ]);
         setPortfolio(portfolioData);
@@ -103,7 +108,7 @@ export default function PortfolioPage() {
     };
 
     fetchData();
-  }, [refreshTrigger, selectedPortfolioId]); // Add selectedPortfolioId dependency
+  }, [refreshTrigger, selectedPortfolioId, user, authLoading]); // Added user dependency
 
   const handlePortfolioChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newId = e.target.value;
@@ -111,7 +116,7 @@ export default function PortfolioPage() {
     localStorage.setItem('lastSelectedPortfolioId', newId);
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -131,6 +136,7 @@ export default function PortfolioPage() {
   return (
     <div className="container mx-auto px-6 py-8 space-y-8">
       <div className="flex justify-between items-start">
+        {/* ... (Existing JSX) ... */}
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Portfolio</h1>
@@ -203,19 +209,21 @@ export default function PortfolioPage() {
         onConfirm={async () => {
           setDeleteLoading(true);
           try {
-            await portfolioService.deletePortfolio(selectedPortfolioId);
-            setRefreshTrigger(prev => prev + 1);
-            // Reset to first available or default
-            const remaining = portfolios.filter(p => p.portfolio_id !== selectedPortfolioId);
-            if (remaining.length > 0) {
-              const nextId = remaining[0].portfolio_id;
-              setSelectedPortfolioId(nextId);
-              localStorage.setItem('lastSelectedPortfolioId', nextId);
-            } else {
-              setSelectedPortfolioId('default_portfolio_id'); // This might need handling if default is not available
-              localStorage.removeItem('lastSelectedPortfolioId');
+            if (user?.id) {
+              await portfolioService.deletePortfolio(selectedPortfolioId, user.id);
+              setRefreshTrigger(prev => prev + 1);
+              // Reset logic...
+              const remaining = portfolios.filter(p => p.portfolio_id !== selectedPortfolioId);
+              if (remaining.length > 0) {
+                const nextId = remaining[0].portfolio_id;
+                setSelectedPortfolioId(nextId);
+                localStorage.setItem('lastSelectedPortfolioId', nextId);
+              } else {
+                setSelectedPortfolioId('default_portfolio_id');
+                localStorage.removeItem('lastSelectedPortfolioId');
+              }
+              setIsDeletePortfolioModalOpen(false);
             }
-            setIsDeletePortfolioModalOpen(false);
           } catch (e) {
             setError("Failed to delete portfolio");
             console.error(e);
@@ -238,7 +246,7 @@ export default function PortfolioPage() {
 
       {/* Content */}
       <div className="min-h-[400px]">
-        {activeTab === "overview" && <PortfolioOverview portfolio={portfolio} />}
+        {activeTab === "overview" && <PortfolioOverview portfolio={portfolio} transactions={transactions} />}
         {activeTab === "holdings" && (
           <PortfolioHoldings
             portfolio={portfolio}

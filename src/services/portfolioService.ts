@@ -6,8 +6,8 @@ export const portfolioService = {
   /**
    * Get portfolio positions
    */
-  async getPortfolio(portfolioId: string = 'default_portfolio_id'): Promise<PortfolioPosition[]> {
-    const data = await apiRequest<any[]>(`/api/portfolio/holdings?portfolio_id=${portfolioId}`); // Dynamic ID
+  async getPortfolio(portfolioId: string = 'default_portfolio_id', includeSold: boolean = false): Promise<PortfolioPosition[]> {
+    const data = await apiRequest<any[]>(`/api/portfolio/holdings?portfolio_id=${portfolioId}&include_sold=${includeSold}`); // Dynamic ID
 
     // Map backend response (snake_case) to frontend type (camelCase)
     // Backend returns: stock_ticker, total_shares, avg_cost_basis, current_price, market_value, gain_loss...
@@ -34,11 +34,9 @@ export const portfolioService = {
    * Create new portfolio
    */
   async createPortfolio(data: import("@/types").PortfolioCreate): Promise<string> {
-    // TODO: Replace hardcoded user_id when auth is ready
-    const payload = { ...data, user_id: "user_123" };
     const res = await apiRequest<{ success: boolean; portfolio_id: string }>("/api/portfolio/create", {
       method: "POST",
-      body: JSON.stringify(payload)
+      body: JSON.stringify(data)
     });
     return res.portfolio_id;
   },
@@ -142,7 +140,8 @@ export const portfolioService = {
   /**
    * Get user portfolios
    */
-  async getPortfolios(userId: string = "user_123"): Promise<import("@/types").Portfolio[]> {
+  async getPortfolios(userId: string): Promise<import("@/types").Portfolio[]> {
+    if (!userId) return []; // Guard clause
     const res = await apiRequest<{ portfolios: any[]; total_value: number }>("/api/portfolio/portfolios?user_id=" + userId);
 
     if (res && Array.isArray(res.portfolios)) {
@@ -172,9 +171,8 @@ export const portfolioService = {
   /**
    * Delete portfolio
    */
-  async deletePortfolio(portfolioId: string): Promise<void> {
-    // TODO: Replace hardcoded user_id
-    await apiRequest(`/api/portfolio/${portfolioId}?user_id=user_123`, {
+  async deletePortfolio(portfolioId: string, userId: string): Promise<void> {
+    await apiRequest(`/api/portfolio/${portfolioId}?user_id=${userId}`, {
       method: "DELETE",
     });
   }

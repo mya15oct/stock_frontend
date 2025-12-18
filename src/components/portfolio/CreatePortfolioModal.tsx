@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '@/components/ui/Modal';
 import { portfolioService } from '@/services/portfolioService';
 import { PortfolioCreate } from '@/types/portfolio';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CreatePortfolioModalProps {
     isOpen: boolean;
@@ -10,14 +11,22 @@ interface CreatePortfolioModalProps {
 }
 
 export default function CreatePortfolioModal({ isOpen, onClose, onSuccess }: CreatePortfolioModalProps) {
+    const { user } = useAuth();
     const [formData, setFormData] = useState<PortfolioCreate>({
-        user_id: '', // Will be handled by service for now
+        user_id: '',
         name: 'My portfolio',
         currency: 'USD',
         goal_type: 'VALUE',
         target_amount: 1000000,
         note: ''
     });
+
+    // Update user_id when user is available
+    useEffect(() => {
+        if (user?.id) {
+            setFormData(prev => ({ ...prev, user_id: user.id }));
+        }
+    }, [user]);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
