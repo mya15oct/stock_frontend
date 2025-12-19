@@ -38,10 +38,8 @@ function LoginForm() {
 
       if (response?.access_token) {
         setLoginSuccess("Login successful! Redirecting...");
-        // Delay redirect slightly to show success
-        setTimeout(() => {
-          login(response.access_token, response.user);
-        }, 1000);
+        console.log("LOGIN SUCCESS - SERVER TOKEN:", response.access_token); // DEBUG
+        login(response.access_token, response.user);
       }
     } catch (err: any) {
       console.error("Login Error:", err);

@@ -19,13 +19,15 @@ export async function apiRequest<T>(
     ? endpoint
     : `${BACKEND_URL}${endpoint}`;
 
+  const { headers: customHeaders, ...customOptions } = options || {};
+
   const response = await fetch(url, {
     cache: "no-store",
     headers: {
       "Content-Type": "application/json",
-      ...options?.headers,
+      ...customHeaders,
     },
-    ...options,
+    ...customOptions,
   });
 
   if (!response.ok) {

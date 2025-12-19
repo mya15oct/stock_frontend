@@ -81,4 +81,19 @@ export const authService = {
             }),
         });
     },
+
+    async updateProfile(updates: { full_name?: string; password?: string }) {
+        const token = localStorage.getItem("token");
+        console.log("Debug - updateProfile Token:", token); // DEBUG LOG
+
+        if (!token) throw new Error("Not authenticated");
+
+        return apiRequest(`${AUTH_API_URL}/profile`, {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(updates),
+        });
+    },
 };
