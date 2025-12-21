@@ -87,10 +87,10 @@ export default function CommunityTab({ ticker }: CommunityTabProps) {
       posts.map((post) =>
         post.id === postId
           ? {
-              ...post,
-              isLiked: !post.isLiked,
-              likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-            }
+            ...post,
+            isLiked: !post.isLiked,
+            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+          }
           : post
       )
     );
@@ -124,10 +124,10 @@ export default function CommunityTab({ ticker }: CommunityTabProps) {
             replies: post.replies.map((reply) =>
               reply.id === replyId
                 ? {
-                    ...reply,
-                    isLiked: !reply.isLiked,
-                    likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1,
-                  }
+                  ...reply,
+                  isLiked: !reply.isLiked,
+                  likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1,
+                }
                 : reply
             ),
           };
@@ -160,13 +160,13 @@ export default function CommunityTab({ ticker }: CommunityTabProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             Community Discussion
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Share insights and discuss {ticker} with other investors
           </p>
         </div>

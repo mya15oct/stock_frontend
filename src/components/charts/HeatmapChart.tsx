@@ -120,10 +120,29 @@ const HeatmapChart = React.memo(function HeatmapChart({
     const bgColor = getColorFromChangePercent(changePercent);
     const textColor = "#ffffff"; // Always white for better contrast
 
-    // Calculate font sizes based on cell size - tăng size lên để dễ đọc hơn
-    const tickerFontSize = width > 120 ? 16 : width > 80 ? 13 : width > 50 ? 10 : 8;
-    const percentFontSize = width > 120 ? 14 : width > 80 ? 11 : width > 50 ? 9 : 7;
-    const priceFontSize = width > 120 ? 11 : 9;
+    // Calculate font sizes based on cell dimensions (using the smaller dimension to constraint size)
+    // This ensures that "Big Box" (both wide and tall) gets Big Text, while strips get smaller text.
+    const minDim = Math.min(width, height);
+
+    let tickerFontSize = 10;
+    let percentFontSize = 8;
+
+    if (minDim > 160) {
+      tickerFontSize = 28;
+      percentFontSize = 16;
+    } else if (minDim > 120) {
+      tickerFontSize = 24;
+      percentFontSize = 15;
+    } else if (minDim > 90) {
+      tickerFontSize = 20;
+      percentFontSize = 14;
+    } else if (minDim > 60) {
+      tickerFontSize = 16;
+      percentFontSize = 12;
+    } else if (minDim > 40) {
+      tickerFontSize = 13;
+      percentFontSize = 10;
+    }
 
     // Add visual padding/gap between stock tiles within sectors
     // This creates a subtle gap effect by slightly reducing the rendered size
@@ -198,7 +217,7 @@ const HeatmapChart = React.memo(function HeatmapChart({
         {adjustedWidth > 40 && adjustedHeight > 40 && (
           <text
             x={adjustedX + adjustedWidth / 2}
-            y={adjustedY + adjustedHeight / 2 - (adjustedHeight > 60 ? 5 : 2)}
+            y={adjustedY + adjustedHeight / 2 - (adjustedHeight > 60 ? 10 : 5)}
             textAnchor="middle"
             fill={textColor}
             stroke="none"
@@ -216,7 +235,7 @@ const HeatmapChart = React.memo(function HeatmapChart({
         {adjustedWidth > 40 && adjustedHeight > 40 && (
           <text
             x={adjustedX + adjustedWidth / 2}
-            y={adjustedY + adjustedHeight / 2 + (adjustedHeight > 60 ? 10 : 8)}
+            y={adjustedY + adjustedHeight / 2 + (adjustedHeight > 60 ? 14 : 9)}
             textAnchor="middle"
             fill={textColor}
             stroke="none"
@@ -231,25 +250,7 @@ const HeatmapChart = React.memo(function HeatmapChart({
             {changePercent?.toFixed(2) ?? "0.00"}%
           </text>
         )}
-        {/* Price (if large enough) */}
-        {adjustedWidth > 100 && adjustedHeight > 70 && (
-          <text
-            x={adjustedX + adjustedWidth / 2}
-            y={adjustedY + adjustedHeight / 2 + 22}
-            textAnchor="middle"
-            fill={textColor}
-            stroke="none"
-            fontSize={priceFontSize}
-            fontWeight="500"
-            opacity={0.9}
-            style={{
-              textShadow: "0 1px 2px rgba(0, 0, 0, 0.3)",
-              pointerEvents: "none", // Prevent text from blocking clicks
-            }}
-          >
-            {price?.toFixed(2) ?? "0.00"}
-          </text>
-        )}
+
 
         {/* Overlay sector border + title on top of all child tiles.
             We draw this from the child nodes (depth >= 2) so that the text/border

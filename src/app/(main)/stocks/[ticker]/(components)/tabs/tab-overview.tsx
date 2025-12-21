@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { useStealthMode } from "@/contexts/StealthContext";
 import type { Stock } from "@/types";
 import { BACKEND_URL } from "@/services/apiBase";
-import PromotionalBanner from "@/components/ui/PromotionalBanner";
+
 import CompanyInfo from "@/components/shared/CompanyInfo";
 import { PriceHistoryChart, type PriceDataPoint, type ChartType } from "@/components/charts";
 import PeriodSelector from "../PeriodSelector";
@@ -145,8 +145,7 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
   return (
     <div className=" bg-white dark:bg-gray-900 min-h-screen transition-colors">
       <div className="py-6">
-        {/* Promotional Banner */}
-        <PromotionalBanner />
+
 
         {/* Main Chart + Metrics Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">

@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Stock Portfolio App",
   description: "Track your stock portfolio",
+  icons: {
+    icon: "/logos/apple.png", // Using an existing logo as favicon
+  },
 };
 
 export default function RootLayout({

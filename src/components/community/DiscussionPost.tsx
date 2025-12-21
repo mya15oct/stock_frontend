@@ -34,11 +34,11 @@ export default function DiscussionPost({
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
       case "bullish":
-        return "text-green-600 bg-green-100";
+        return "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30";
       case "bearish":
-        return "text-red-600 bg-red-100";
+        return "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30";
       default:
-        return "text-gray-600 bg-gray-100";
+        return "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800";
     }
   };
 
@@ -56,10 +56,10 @@ export default function DiscussionPost({
     : post.replies.slice(0, 2);
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow dark:hover:shadow-gray-800">
       <div className="flex items-start gap-4">
         <div className="flex-shrink-0">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
             {post.author.charAt(0)}
           </div>
         </div>
@@ -68,48 +68,37 @@ export default function DiscussionPost({
           <div className="flex items-start justify-between mb-2">
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-white">
                   {post.author}
                 </span>
-                <span className="text-sm text-gray-500">{post.timestamp}</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${getSentimentColor(
-                    post.sentiment
-                  )}`}
-                >
-                  {getSentimentIcon(post.sentiment)} {post.sentiment}
-                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{post.timestamp}</span>
               </div>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span>👁️ {post.views}</span>
             </div>
           </div>
 
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             {post.title}
           </h3>
-          <p className="text-gray-700 mb-3">{post.content}</p>
+          <p className="text-gray-700 dark:text-gray-300 mb-3">{post.content}</p>
 
           <div className="flex items-center gap-2 mb-3">
             {post.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"
+                className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded text-xs border border-transparent dark:border-gray-700"
               >
                 #{tag}
               </span>
             ))}
           </div>
 
-          <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-4 pt-3 border-t border-gray-100 dark:border-gray-700">
             <button
               onClick={() => onLike(post.id)}
-              className={`flex items-center gap-1 text-sm transition-colors ${
-                post.isLiked
-                  ? "text-blue-600 font-medium"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
+              className={`flex items-center gap-1 text-sm transition-colors ${post.isLiked
+                ? "text-blue-600 dark:text-blue-400 font-medium"
+                : "text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                }`}
             >
               <svg
                 className="w-5 h-5"
@@ -128,7 +117,7 @@ export default function DiscussionPost({
             </button>
             <button
               onClick={() => setShowReplyForm(!showReplyForm)}
-              className="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600 transition-colors"
+              className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
               <svg
                 className="w-5 h-5"
@@ -153,7 +142,7 @@ export default function DiscussionPost({
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 placeholder="Write your reply..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
                 rows={3}
               />
               <div className="flex gap-2 mt-2">
@@ -177,7 +166,7 @@ export default function DiscussionPost({
               {displayedReplies.map((reply) => (
                 <div
                   key={reply.id}
-                  className="flex items-start gap-3 pl-4 border-l-2 border-gray-200"
+                  className="flex items-start gap-3 pl-4 border-l-2 border-gray-200 dark:border-gray-700"
                 >
                   <div className="flex-shrink-0">
                     <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
@@ -186,23 +175,22 @@ export default function DiscussionPost({
                   </div>
                   <div className="flex-grow">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm text-gray-900">
+                      <span className="font-medium text-sm text-gray-900 dark:text-white">
                         {reply.author}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {reply.timestamp}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 mb-2">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                       {reply.content}
                     </p>
                     <button
                       onClick={() => onLikeReply(post.id, reply.id)}
-                      className={`flex items-center gap-1 text-xs transition-colors ${
-                        reply.isLiked
-                          ? "text-blue-600 font-medium"
-                          : "text-gray-500 hover:text-blue-600"
-                      }`}
+                      className={`flex items-center gap-1 text-xs transition-colors ${reply.isLiked
+                        ? "text-blue-600 dark:text-blue-400 font-medium"
+                        : "text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                        }`}
                     >
                       <svg
                         className="w-4 h-4"
@@ -225,7 +213,7 @@ export default function DiscussionPost({
               {post.replies.length > 2 && (
                 <button
                   onClick={() => setShowAllReplies(!showAllReplies)}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                 >
                   {showAllReplies
                     ? "Show less"
