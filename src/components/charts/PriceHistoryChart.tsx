@@ -12,6 +12,7 @@
  * - ⚖️ Benchmark Comparison (Dual Axis Mode: Price vs Index)
  */
 
+import { useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -67,13 +68,23 @@ export default function PriceHistoryChart({
   // Determine if we are in comparison mode
   const isComparison = !!benchmarkData && benchmarkData.length > 0;
 
-  // Normalize data (simplified for dual-axis: just mapping benchmark price)
+  // Create a map for benchmark data for efficient O(1) date-based lookup
+  // This ensures alignment even if data/benchmark arrays have different lengths or gaps
+  const benchMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (benchmarkData) {
+      benchmarkData.forEach(b => map.set(b.date, b.price));
+    }
+    return map;
+  }, [benchmarkData]);
+
+  // Normalize data (mapping benchmark price by Date)
   const normalizedData = isComparison
-    ? data.map((d, i) => {
-      const benchItem = benchmarkData[i] || benchmarkData[benchmarkData.length - 1];
+    ? data.map((d) => {
+      const benchPrice = benchMap.get(d.date);
       return {
         ...d,
-        benchPrice: benchItem?.price,
+        benchPrice: benchPrice, // Now undefined if date missing in benchmark, which breaks line but is correct
       };
     })
     : data;

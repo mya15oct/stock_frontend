@@ -78,7 +78,7 @@ export default function OverviewTab({ stock }: OverviewTabProps) {
 
         // Fetch Benchmark Data if enabled
         if (showBenchmark) {
-          const benchUrl = `${BACKEND_URL}/api/stocks/^GSPC/price-history?period=${apiPeriod}`;
+          const benchUrl = `${BACKEND_URL}/api/stocks/%5EGSPC/price-history?period=${apiPeriod}`;
           console.log(`[OverviewTab] Fetching benchmark history: ${benchUrl}`);
 
           try {
