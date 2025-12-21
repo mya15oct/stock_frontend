@@ -35,21 +35,12 @@ const NEWS_TEMPLATES = [
 
 // Stock market related Unsplash image IDs - verified working URLs
 const STOCK_IMAGES = [
-  "1486406146926-c627a92ad1ab", // Business building
-  "1611273426858-450d8e3c9fce", // Stock chart
-  "1611974789855-9c2a0a7236a3", // Financial data
-  "1554224155-6726b3ff858f", // Trading floor
-  "1582719471137-c3967ffb1c42", // Market analysis
-  "1578575437130-527eed3abbec", // Business meeting
-  "1474487548417-781cb71495f3", // Technology
-  "1460925895917-afdab827c52f", // Finance
-  "1551284619-4b062714ba13", // Analytics
-  "1552664736-d306d0b0a887", // Business strategy
+  "1611974789855-9c2a0a7236a3", // Blue finance chart
+  "1590283603385-17ffb3a7f29f", // Stock candles
+  "1486406146926-c627a92ad1ab", // High rise buildings
+  "1460925895917-afdab827c52f", // Laptop workspace
+  "1486312338219-ce68d2c6f44d", // Technology (Typing) -> Replaces broken Team Meeting
   "1507003211169-0a1dd7228f2d", // Business person
-  "1551434678-e076c223a0d7", // Team meeting
-  "1521737852567-9c0c0a0b9c9b", // Growth chart
-  "1551284619-4b062714ba13", // Data analytics
-  "1460925895917-afdab827c52f", // Finance duplicate
 ];
 
 // Fallback placeholder image - simple gray placeholder

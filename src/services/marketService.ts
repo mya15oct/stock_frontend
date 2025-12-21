@@ -77,12 +77,12 @@ export const marketService = {
         ticker === "SPY"
           ? 467.84
           : ticker === "QQQ"
-          ? 387.23
-          : ticker === "DIA"
-          ? 350.15
-          : ticker === "VNINDEX"
-          ? 1650
-          : 212.56;
+            ? 387.23
+            : ticker === "DIA"
+              ? 350.15
+              : ticker === "VNINDEX"
+                ? 1650
+                : 212.56;
 
       const bars = generateMockCandles(ticker, timeframe, limit, basePrice);
 
@@ -168,6 +168,53 @@ export const marketService = {
     //   console.error("Error fetching market status:", error);
     //   throw error;
     // }
+  },
+  /**
+   * Check if a stock ticker exists (for validation)
+   * GET /api/market/stocks/check?ticker={ticker}
+   */
+  async checkStock(ticker: string): Promise<{ exists: boolean; symbol: string }> {
+    try {
+      return await apiRequest<{ exists: boolean; symbol: string }>(
+        `/api/market/stocks/check?ticker=${ticker}`
+      );
+    } catch (error) {
+      console.error("Error checking stock:", error);
+      return { exists: false, symbol: ticker };
+    }
+  },
+
+  /**
+   * Search companies by ticker or name
+   * GET /api/search?q={query}
+   */
+  async searchCompanies(query: string): Promise<any[]> {
+    try {
+      if (!query || query.length < 1) return [];
+      const data = await apiRequest<any[]>(`/api/search?q=${query}`);
+      return data || [];
+    } catch (error) {
+      console.error("Error searching companies:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Get real-time quote for a stock
+   * GET /api/quote?ticker={ticker}
+   */
+  async getQuote(ticker: string): Promise<any> {
+    try {
+      if (!ticker) return null;
+      // apiRequest already unwraps 'data', so 'response' IS the quote object
+      const response = await apiRequest<any>(
+        `/api/quote?ticker=${ticker}`
+      );
+      return response;
+    } catch (error) {
+      console.error("Error fetching quote:", error);
+      return null;
+    }
   },
 };
 

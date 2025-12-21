@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useStealthMode } from "@/contexts/StealthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { stockService } from "@/services/stockService";
 import { hasCompanyData } from "@/utils/company";
 import type { Stock } from "@/types";
@@ -12,6 +13,11 @@ import type { Stock } from "@/types";
 export default function Header() {
   const { isStealthMode, toggleStealthMode } = useStealthMode();
   const { isDarkMode, toggleTheme } = useTheme();
+  // Consume AuthContext for reactive user state
+  const { user, logout } = useAuth();
+
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Search state
   const [query, setQuery] = useState("");
@@ -19,12 +25,17 @@ export default function Header() {
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  // Handle outside click to close search results
+  // Handle outside click to close search results and user menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowResults(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -59,6 +70,26 @@ export default function Header() {
     setShowResults(false);
   };
 
+  const getDisplayName = () => {
+    if (!user) return "";
+    if (user.full_name) return user.full_name;
+    return user.email.split("@")[0];
+  };
+
+  // Safe display name derivation
+  const displayName = getDisplayName();
+
+  const isPortfolioPage = pathname === "/portfolio";
+  const currentTab = searchParams.get("tab") || "overview";
+
+  const getDropdownItemClass = (tabName: string) => {
+    const isActive = isPortfolioPage && currentTab === tabName;
+    return `block px-4 py-2 text-sm transition-all duration-200 border-l-4 ${isActive
+      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium"
+      : "border-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+      }`;
+  };
+
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 transition-colors">
       <nav className="container mx-auto px-6 py-3 flex items-center justify-between gap-4">
@@ -70,13 +101,43 @@ export default function Header() {
           <div className="hidden md:flex items-center space-x-6">
             <Link
               href="/"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className={`text-sm font-medium transition-colors ${pathname === "/" ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
             >
               Dashboard
             </Link>
+
+            {/* Portfolio Dropdown */}
+            <div className="relative group h-full flex items-center">
+              <Link
+                href="/portfolio"
+                className={`text-sm font-medium transition-colors flex items-center gap-1 ${pathname.startsWith("/portfolio") ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+              >
+                Portfolio
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </Link>
+
+              {/* Dropdown Content */}
+              <div className="absolute top-full left-0 mt-0 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+                <Link href="/portfolio?tab=overview" className={getDropdownItemClass("overview")}>
+                  Overview
+                </Link>
+                <Link href="/portfolio?tab=holdings" className={getDropdownItemClass("holdings")}>
+                  Holdings
+                </Link>
+                <Link href="/portfolio?tab=transactions" className={getDropdownItemClass("transactions")}>
+                  Transactions
+                </Link>
+              </div>
+            </div>
+
             <Link
               href="/stocks"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className={`text-sm font-medium transition-colors ${pathname.startsWith("/stocks") ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
             >
               Stocks
             </Link>
@@ -84,7 +145,7 @@ export default function Header() {
         </div>
 
         {/* Middle Section: Search Bar */}
-        <div className="w-full max-w-md ml-auto mr-4 relative" ref={searchRef}>
+        <div className="w-full max-w-xs ml-auto mr-4 relative" ref={searchRef}>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -196,9 +257,59 @@ export default function Header() {
               </svg>
             )}
           </button>
-          <button className="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors">
-            Start for free
-          </button>
+
+          {user ? (
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-3 pl-6 border-l border-gray-200 dark:border-gray-700 hover:opacity-80 transition-opacity"
+              >
+                <div className="text-right hidden sm:block">
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    {displayName}
+                  </div>
+                </div>
+                <div className="h-9 w-9 rounded-full bg-blue-500 overflow-hidden flex items-center justify-center text-white font-medium shadow-sm ring-2 ring-white dark:ring-gray-800">
+                  {user.avatar_url ? (
+                    <img src={user.avatar_url} alt={displayName} className="h-full w-full object-cover" />
+                  ) : (
+                    <span>{displayName.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+              </button>
+
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 border border-gray-200 dark:border-gray-700">
+                  <Link
+                    href="/settings"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Settings
+                  </Link>
+                  <div className="h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
+                  <button
+                    onClick={logout}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link href="/sign-in" className="text-xs bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors">
+              Log in
+            </Link>
+          )}
         </div>
       </nav>
     </header>

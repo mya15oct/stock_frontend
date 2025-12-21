@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { BACKEND_URL } from "@/services/apiBase";
 
 interface PeriodData {
   period: string;
@@ -20,8 +21,6 @@ interface PeriodSelectorProps {
   onPeriodChange: (period: string) => void;
   currentPrice: number;
 }
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export default function PeriodSelector({
   ticker,
@@ -48,7 +47,7 @@ export default function PeriodSelector({
             // Map "ytd" to API period
             const apiPeriod = periodData.period;
 
-            const url = `${API_BASE_URL}/api/stocks/${ticker}/price-history?period=${apiPeriod}`;
+            const url = `${BACKEND_URL}/api/stocks/${ticker}/price-history?period=${apiPeriod}`;
             console.log(`[PeriodSelector] Fetching ${periodData.period}:`, url);
 
             const response = await fetch(url);
@@ -121,8 +120,8 @@ export default function PeriodSelector({
             `}
           >
             <span className={`text-sm font-medium ${isSelected
-                ? "text-gray-900 dark:text-white"
-                : "text-gray-600 dark:text-gray-400"
+              ? "text-gray-900 dark:text-white"
+              : "text-gray-600 dark:text-gray-400"
               }`}>
               {periodData.label}
             </span>

@@ -2,9 +2,9 @@
 import type { ApiResponse } from "@/types";
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-const PYTHON_API_URL =
-  process.env.NEXT_PUBLIC_PYTHON_API_URL || BACKEND_URL;
+  // process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:5000";
+  "http://127.0.0.1:5000";
+const PYTHON_API_URL = BACKEND_URL;
 
 export { BACKEND_URL, PYTHON_API_URL };
 
@@ -19,20 +19,52 @@ export async function apiRequest<T>(
     ? endpoint
     : `${BACKEND_URL}${endpoint}`;
 
+  const { headers: customHeaders, ...customOptions } = options || {};
+
   const response = await fetch(url, {
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
-      ...options?.headers,
+      ...customHeaders,
     },
-    ...options,
+    ...customOptions,
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    if (process.env.NODE_ENV === 'development') {
-      console.error("API Error Response:", errorText);
+    // Demo Stability Fix: Auto-logout on 401 Unauthorized
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        console.warn("Session expired (401). Redirecting to login...");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/sign-in";
+        return {} as T; // Prevent further error handling
+      }
     }
-    throw new Error(`API Error: ${response.statusText}`);
+
+    let errorMessage = `API Error: ${response.statusText}`;
+    let errorDetails = null;
+
+    try {
+      const errorData = await response.json();
+      // Handle FastAPI "detail" field and other common error formats
+      errorMessage = errorData.detail || errorData.error || errorData.message || errorMessage;
+      errorDetails = errorData;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.error("API Error Response parsed:", errorData);
+      }
+    } catch (e) {
+      // If parsing fails, use text
+      const errorText = await response.text();
+      console.error("API Error Response (text):", errorText);
+      errorMessage = errorText || errorMessage;
+    }
+
+    const error = new Error(errorMessage);
+    (error as any).details = errorDetails;
+    (error as any).status = response.status;
+    throw error;
   }
 
   const data: ApiResponse<T> = await response.json();
@@ -52,6 +84,10 @@ export async function apiRequest<T>(
     return data as unknown as T;
   }
 
-  // If data.success is true but data.data is missing
+  // If data.success is true but data.data is missing, it might be a simple success message
+  if (data.success) {
+    return data as unknown as T;
+  }
+
   throw new Error("Invalid API response structure");
 }

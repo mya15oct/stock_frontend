@@ -7,9 +7,10 @@ export default function AuthLayout({
 }) {
   return (
     <StealthProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="bg-[#2E2E3E] flex items-center justify-center p-4">
         {children}
       </div>
     </StealthProvider>
   );
 }
+

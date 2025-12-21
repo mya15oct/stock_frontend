@@ -36,14 +36,14 @@ export default function NewPostForm({
 
   return (
     <Card>
-      <h3 className="text-lg font-semibold mb-4">
+      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
         Start New Discussion about {ticker}
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label
             htmlFor="title"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Discussion Title
           </label>
@@ -53,7 +53,7 @@ export default function NewPostForm({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={`Share your thoughts about ${ticker}...`}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 dark:placeholder-gray-500"
             required
           />
         </div>
@@ -61,7 +61,7 @@ export default function NewPostForm({
         <div>
           <label
             htmlFor="content"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Content
           </label>
@@ -70,7 +70,7 @@ export default function NewPostForm({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Provide detailed analysis, insights, or questions..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 dark:placeholder-gray-500"
             rows={6}
             required
           />
@@ -79,7 +79,7 @@ export default function NewPostForm({
         <div>
           <label
             htmlFor="tags"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Tags (comma separated)
           </label>
@@ -89,7 +89,7 @@ export default function NewPostForm({
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="earnings, analysis, long-term..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
 

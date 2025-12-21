@@ -8,7 +8,7 @@ import type {
   StatementType,
   Stock,
 } from "@/types";
-import PromotionalBanner from "@/components/ui/PromotionalBanner";
+
 import { AnimatedBarChart, CHART_COLORS } from "@/components/charts";
 import { formatFinancialNumber, getFinancialScale } from "@/utils/format";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -657,9 +657,8 @@ export default function FinancialsTab({ ticker }: FinancialsTabProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Promotional Banner */}
-      <PromotionalBanner />
+    <div className="space-y-6 pt-6">
+
 
       {/* Controls - Tabs and Dropdowns */}
       <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
